@@ -12,16 +12,58 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Vonso\FaspayTestLab\Models\FaspayMerchant;
 use Vonso\FaspayTestLab\Models\FaspayTestRun;
 use Vonso\FaspayTestLab\Services\FaspayExcelExportService;
+use Vonso\FaspayTestLab\Services\QrisNotificationService;
 use Vonso\FaspayTestLab\Services\QrisFunctionalTestService;
 
 class FaspayTestLabController extends Controller
 {
     public function index(): View
     {
-        return view('faspay-test-lab::index', [
-            'merchants' => FaspayMerchant::latest()->get(),
-            'runs' => FaspayTestRun::with('merchant')->latest()->limit(20)->get(),
+        $merchants = FaspayMerchant::latest()->get();
+        if ($merchants->isEmpty()) {
+            return view('faspay-test-lab::merchants.form', ['onboarding' => true]);
+        }
+
+        return view('faspay-test-lab::dashboard', [
+            'merchants' => $merchants,
+            'runs' => FaspayTestRun::with('merchant')->latest()->limit(5)->get(),
+        ]);
+    }
+
+    public function merchants(): View
+    {
+        return view('faspay-test-lab::merchants.index', [
+            'merchants' => FaspayMerchant::withCount('runs')->latest()->get(),
+        ]);
+    }
+
+    public function createMerchant(): View
+    {
+        return view('faspay-test-lab::merchants.form');
+    }
+
+    public function editMerchant(FaspayMerchant $merchant): View
+    {
+        return view('faspay-test-lab::merchants.form', compact('merchant'));
+    }
+
+    public function createQrisRun(): View
+    {
+        $merchants = FaspayMerchant::latest()->get();
+        if ($merchants->isEmpty()) {
+            return view('faspay-test-lab::merchants.form');
+        }
+
+        return view('faspay-test-lab::runs.create', [
+            'merchants' => $merchants,
             'cases' => config('faspay-test-lab.qris_cases', []),
+        ]);
+    }
+
+    public function runs(): View
+    {
+        return view('faspay-test-lab::runs.index', [
+            'runs' => FaspayTestRun::with('merchant')->latest()->paginate(20),
         ]);
     }
 
@@ -36,12 +78,14 @@ class FaspayTestLabController extends Controller
             'qris_channel_code' => ['required', 'string'],
         ]);
 
-        FaspayMerchant::create([...$data, 'merchant_id' => $data['partner_id']]);
+        $merchant = FaspayMerchant::create([...$data, 'merchant_id' => $data['partner_id']]);
 
-        return back()->with('status', 'Merchant ditambahkan.');
+        return redirect()
+            ->route('faspay-test-lab.qris.runs.create', ['merchant' => $merchant->id])
+            ->with('status', 'Merchant berhasil disimpan.');
     }
 
-    public function updateMerchant(Request $request, FaspayMerchant $merchant): JsonResponse
+    public function updateMerchant(Request $request, FaspayMerchant $merchant): JsonResponse|RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -57,6 +101,12 @@ class FaspayTestLabController extends Controller
         }
         $data['merchant_id'] = $data['partner_id'];
         $merchant->update($data);
+
+        if (! $request->expectsJson()) {
+            return redirect()
+                ->route('faspay-test-lab.merchants.index')
+                ->with('status', 'Merchant berhasil diperbarui.');
+        }
 
         return response()->json([
             'ok' => true,
@@ -129,7 +179,7 @@ class FaspayTestLabController extends Controller
     {
         $run->load('merchant');
 
-        return view('faspay-test-lab::show', compact('run'));
+        return view('faspay-test-lab::runs.show', compact('run'));
     }
 
     public function checkPayment(
@@ -161,6 +211,13 @@ class FaspayTestLabController extends Controller
         $this->persistResult($run, $result);
 
         return response()->json(['result' => $result]);
+    }
+
+    public function receiveQrisNotification(
+        Request $request,
+        QrisNotificationService $service,
+    ): JsonResponse {
+        return $service->handle($request);
     }
 
     public function export(FaspayTestRun $run, FaspayExcelExportService $exporter): BinaryFileResponse

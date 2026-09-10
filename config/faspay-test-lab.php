@@ -45,6 +45,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | QRIS Payment Notification
+    |--------------------------------------------------------------------------
+    |
+    | This machine-to-machine route is intentionally separate from the Test Lab
+    | dashboard middleware. Faspay must be able to call it without a session or
+    | CSRF token, including when the dashboard is disabled in production.
+    |
+    */
+    'qris_notification' => [
+        'enabled' => env('FASPAY_TEST_LAB_QRIS_NOTIFICATION_ENABLED', false),
+        'path' => env(
+            'FASPAY_TEST_LAB_QRIS_NOTIFICATION_PATH',
+            'faspay/sandbox/v1.0/qr/qr-mpm-notify',
+        ),
+        // Faspay's public key verifies inbound SHA256withRSA signatures.
+        'faspay_public_key' => env('FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Database Table Names
     |--------------------------------------------------------------------------
     |
