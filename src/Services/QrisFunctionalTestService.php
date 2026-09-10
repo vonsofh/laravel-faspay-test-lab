@@ -108,7 +108,7 @@ class QrisFunctionalTestService
         $body = [
             'partnerReferenceNo' => $partnerReferenceNo,
             'amount' => [
-                'value' => '10000.00',
+                'value' => '1800.00',
                 'currency' => 'IDR',
             ],
             'merchantId' => $merchant->partner_id,
