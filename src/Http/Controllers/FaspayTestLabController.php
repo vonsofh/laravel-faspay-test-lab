@@ -138,7 +138,7 @@ class FaspayTestLabController extends Controller
         ]);
 
         return response()->json([
-            'run_id' => $run->id,
+            'run_id' => $run->public_id,
             'show_url' => route('faspay-test-lab.runs.show', $run),
             'export_url' => route('faspay-test-lab.runs.export', $run),
         ], 201);

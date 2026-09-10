@@ -1,6 +1,6 @@
 @extends('faspay-test-lab::layouts.app')
 
-@section('title', 'Pengujian #'.$run->id)
+@section('title', 'Hasil pengujian QRIS')
 
 @section('content')
 @php($results = collect($run->results))
@@ -18,7 +18,7 @@
     <div class="report-title-row">
         <div>
             <h1>Hasil pengujian QRIS</h1>
-            <p class="lead">{{ $run->merchant?->name ?? 'Merchant dihapus' }} · {{ $run->created_at->format('d M Y, H:i') }} · #{{ $run->id }}</p>
+            <p class="lead">{{ $run->merchant?->name ?? 'Merchant dihapus' }} · {{ $run->created_at->format('d M Y, H:i') }}</p>
         </div>
         <a class="btn" href="{{ route('faspay-test-lab.runs.export', $run) }}">Unduh Excel</a>
     </div>

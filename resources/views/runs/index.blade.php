@@ -18,7 +18,7 @@
         @foreach($runs as $run)
             @php($auto = collect($run->results)->where('execution_type', 'automated'))
             <tr>
-                <td><span class="code">#{{ $run->id }}</span></td>
+                <td><span class="code">{{ substr($run->public_id, 0, 8) }}</span></td>
                 <td><strong>{{ $run->merchant?->name ?? 'Merchant dihapus' }}</strong></td>
                 <td>{{ $run->created_at->format('d M Y, H:i') }}</td>
                 <td><span class="status {{ $auto->where('result', 'FAIL')->isNotEmpty() ? 'fail' : ($run->status === 'completed' ? 'pass' : 'waiting') }}">{{ $auto->where('result', 'PASS')->count() }}/{{ $auto->count() }} berhasil</span></td>
