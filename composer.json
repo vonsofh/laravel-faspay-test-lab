@@ -1,0 +1,60 @@
+{
+    "name": "vonsofh/laravel-faspay-test-lab",
+    "description": "Faspay SNAP UAT Certification & Functional Test Lab for Laravel (QRIS, VA, Direct Debit).",
+    "type": "library",
+    "keywords": [
+        "vonsofh",
+        "laravel",
+        "faspay",
+        "snap",
+        "qris",
+        "virtual-account",
+        "direct-debit",
+        "payment-gateway",
+        "uat",
+        "testing"
+    ],
+    "homepage": "https://github.com/vonsofh/laravel-faspay-test-lab",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Vonso FH",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2|^8.3|^8.4|^8.5",
+        "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/routing": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/view": "^10.0|^11.0|^12.0|^13.0",
+        "phpoffice/phpspreadsheet": "^1.28|^2.0|^3.0|^5.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^8.0|^9.0|^10.0",
+        "pestphp/pest": "^2.0|^3.0|^5.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Vonso\\FaspayTestLab\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Vonso\\FaspayTestLab\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Vonso\\FaspayTestLab\\FaspayTestLabServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
