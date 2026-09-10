@@ -97,8 +97,10 @@ FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n...\n-----END PUB
 The public key can alternatively be read from a server-side file:
 
 ```dotenv
-FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY=file:///absolute/path/to/faspay-public-key.pem
+FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY_PATH=/absolute/path/to/faspay-public-key.pem
 ```
+
+If the host already defines `FASPAY_SANDBOX_PUBLIC_KEY_PATH`, the package uses that file automatically.
 
 The legacy Debit Transaction endpoint `/faspay/sandbox/payment-notification` is a different protocol and must not be used for SNAP QRIS notification.
 

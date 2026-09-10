@@ -61,6 +61,10 @@ return [
         ),
         // Faspay's public key verifies inbound SHA256withRSA signatures.
         'faspay_public_key' => env('FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY'),
+        'faspay_public_key_path' => env(
+            'FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY_PATH',
+            env('FASPAY_SANDBOX_PUBLIC_KEY_PATH'),
+        ),
     ],
 
     /*

@@ -140,13 +140,18 @@ class QrisNotificationService
     private function publicKey(): mixed
     {
         $configured = config('faspay-test-lab.qris_notification.faspay_public_key');
-        if (! is_string($configured) || trim($configured) === '') {
+        if (is_string($configured) && trim($configured) !== '') {
+            $value = str_replace('\\n', "\n", $configured);
+
+            return openssl_pkey_get_public($value);
+        }
+
+        $path = config('faspay-test-lab.qris_notification.faspay_public_key_path');
+        if (! is_string($path) || trim($path) === '') {
             return null;
         }
 
-        $value = str_starts_with($configured, 'file://')
-            ? @file_get_contents(substr($configured, 7))
-            : str_replace('\\n', "\n", $configured);
+        $value = @file_get_contents($path);
 
         return is_string($value) ? openssl_pkey_get_public($value) : null;
     }
