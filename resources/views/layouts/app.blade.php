@@ -16,6 +16,7 @@
         <a class="brand" href="{{ route('faspay-test-lab.index') }}">Faspay Test Lab</a>
         <nav class="nav" aria-label="Navigasi utama">
             <a class="{{ request()->routeIs('faspay-test-lab.index') ? 'active' : '' }}" href="{{ route('faspay-test-lab.index') }}">Beranda</a>
+            <a class="{{ request()->routeIs('faspay-test-lab.va.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.va.index') }}">VA Sandbox</a>
             <a class="{{ request()->routeIs('faspay-test-lab.merchants.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.merchants.index') }}">Merchant</a>
             <a class="{{ request()->routeIs('faspay-test-lab.runs.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.runs.index') }}">Riwayat</a>
         </nav>

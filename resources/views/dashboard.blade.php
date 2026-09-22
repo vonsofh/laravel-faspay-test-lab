@@ -12,6 +12,17 @@
 </div>
 
 <section class="panel">
+    <div class="panel-head"><div><h2>URL notifikasi sandbox</h2><p class="subtle">Gunakan URL persis berikut pada konfigurasi Faspay.</p></div></div>
+    <table>
+        <tbody>
+            <tr><th>VA Static</th><td><span class="code">{{ route('faspay-test-lab.va.payment') }}</span></td></tr>
+            <tr><th>QRIS</th><td><span class="code">{{ route('faspay-test-lab.qris.notification') }}</span></td></tr>
+            <tr><th>Direct Debit</th><td><span class="code">{{ route('faspay-test-lab.direct-debit.notification') }}</span></td></tr>
+        </tbody>
+    </table>
+</section>
+
+<section class="panel">
     <div class="panel-head">
         <div><h2>Pengujian terakhir</h2></div>
         <a class="btn secondary" href="{{ route('faspay-test-lab.runs.index') }}">Lihat semua</a>

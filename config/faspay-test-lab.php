@@ -45,7 +45,7 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | QRIS Payment Notification
+    | Inbound Payment Notifications
     |--------------------------------------------------------------------------
     |
     | This machine-to-machine route is intentionally separate from the Test Lab
@@ -54,10 +54,10 @@ return [
     |
     */
     'qris_notification' => [
-        'enabled' => env('FASPAY_TEST_LAB_QRIS_NOTIFICATION_ENABLED', false),
+        'enabled' => env('FASPAY_TEST_LAB_QRIS_NOTIFICATION_ENABLED', true),
         'path' => env(
             'FASPAY_TEST_LAB_QRIS_NOTIFICATION_PATH',
-            'faspay/sandbox/v1.0/qr/qr-mpm-notify',
+            'faspay/sandbox/notification/v1.0/qr/qr-mpm-notify',
         ),
         // Faspay's public key verifies inbound SHA256withRSA signatures.
         'faspay_public_key' => env('FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY'),
@@ -65,6 +65,40 @@ return [
             'FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY_PATH',
             env('FASPAY_SANDBOX_PUBLIC_KEY_PATH'),
         ),
+    ],
+
+    'va_notification' => [
+        'enabled' => env('FASPAY_TEST_LAB_VA_NOTIFICATION_ENABLED', true),
+        'inquiry_path' => env(
+            'FASPAY_TEST_LAB_VA_INQUIRY_PATH',
+            'faspay/sandbox/notification/v1.0/transfer-va/inquiry',
+        ),
+        'payment_path' => env(
+            'FASPAY_TEST_LAB_VA_PAYMENT_PATH',
+            'faspay/sandbox/notification/v1.0/transfer-va/payment',
+        ),
+        'faspay_public_key' => env(
+            'FASPAY_TEST_LAB_VA_FASPAY_PUBLIC_KEY',
+            env('FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY'),
+        ),
+        'faspay_public_key_path' => env(
+            'FASPAY_TEST_LAB_VA_FASPAY_PUBLIC_KEY_PATH',
+            env('FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY_PATH', env('FASPAY_SANDBOX_PUBLIC_KEY_PATH')),
+        ),
+        'channels' => [
+            '402' => ['name' => 'Permata Virtual Account', 'prefix' => '370731'],
+        ],
+    ],
+
+    'direct_debit_notification' => [
+        'enabled' => env('FASPAY_TEST_LAB_DIRECT_DEBIT_NOTIFICATION_ENABLED', true),
+        'path' => env(
+            'FASPAY_TEST_LAB_DIRECT_DEBIT_NOTIFICATION_PATH',
+            'faspay/sandbox/notification/v1.0/debit/notify',
+        ),
+        'user_id' => env('FASPAY_TEST_LAB_DIRECT_DEBIT_USER_ID'),
+        'password' => env('FASPAY_TEST_LAB_DIRECT_DEBIT_PASSWORD'),
+        'merchant_id' => env('FASPAY_TEST_LAB_DIRECT_DEBIT_MERCHANT_ID'),
     ],
 
     /*
@@ -78,6 +112,8 @@ return [
     'tables' => [
         'merchants' => 'faspay_test_lab_merchants',
         'runs' => 'faspay_test_lab_runs',
+        'va_accounts' => 'faspay_test_lab_va_accounts',
+        'callbacks' => 'faspay_test_lab_callbacks',
     ],
 
     /*

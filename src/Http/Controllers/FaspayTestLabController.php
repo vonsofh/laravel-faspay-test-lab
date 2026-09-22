@@ -5,15 +5,21 @@ namespace Vonso\FaspayTestLab\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Vonso\FaspayTestLab\Models\FaspayCallback;
 use Vonso\FaspayTestLab\Models\FaspayMerchant;
 use Vonso\FaspayTestLab\Models\FaspayTestRun;
+use Vonso\FaspayTestLab\Models\FaspayVaAccount;
+use Vonso\FaspayTestLab\Services\DirectDebitNotificationService;
 use Vonso\FaspayTestLab\Services\FaspayExcelExportService;
 use Vonso\FaspayTestLab\Services\QrisNotificationService;
 use Vonso\FaspayTestLab\Services\QrisFunctionalTestService;
+use Vonso\FaspayTestLab\Services\VaNotificationService;
+use Vonso\FaspayTestLab\Services\VaSandboxAccountService;
 
 class FaspayTestLabController extends Controller
 {
@@ -58,6 +64,37 @@ class FaspayTestLabController extends Controller
             'merchants' => $merchants,
             'cases' => config('faspay-test-lab.qris_cases', []),
         ]);
+    }
+
+    public function va(): View
+    {
+        return view('faspay-test-lab::va.index', [
+            'merchants' => FaspayMerchant::latest()->get(),
+            'account' => FaspayVaAccount::with('merchant')->where('active', true)->latest()->first(),
+            'channels' => config('faspay-test-lab.va_notification.channels', []),
+            'callbacks' => FaspayCallback::with('vaAccount')->whereIn('service', ['va_inquiry', 'va_payment'])->latest()->limit(20)->get(),
+        ]);
+    }
+
+    public function storeVaAccount(Request $request, VaSandboxAccountService $accounts): RedirectResponse
+    {
+        $merchantTable = config('faspay-test-lab.tables.merchants', 'faspay_test_lab_merchants');
+        $channelCodes = array_keys(config('faspay-test-lab.va_notification.channels', []));
+        $data = $request->validate([
+            'merchant_id' => ['required', "exists:{$merchantTable},id"],
+            'channel_code' => ['required', 'string', 'in:'.implode(',', $channelCodes)],
+            'display_name' => ['required', 'string', 'max:30', 'regex:/^[A-Za-z0-9 ]+$/'],
+            'amount' => ['required', 'integer', 'min:1000', 'max:999999999'],
+        ]);
+
+        $accounts->create(
+            FaspayMerchant::findOrFail($data['merchant_id']),
+            $data['channel_code'],
+            $data['display_name'],
+            ((int) $data['amount']) * 100,
+        );
+
+        return redirect()->route('faspay-test-lab.va.index')->with('status', 'Nomor VA sandbox berhasil dibuat.');
     }
 
     public function runs(): View
@@ -217,6 +254,23 @@ class FaspayTestLabController extends Controller
         Request $request,
         QrisNotificationService $service,
     ): JsonResponse {
+        return $service->handle($request);
+    }
+
+    public function receiveVaInquiry(Request $request, VaNotificationService $service): JsonResponse
+    {
+        return $service->inquiry($request);
+    }
+
+    public function receiveVaPayment(Request $request, VaNotificationService $service): JsonResponse
+    {
+        return $service->payment($request);
+    }
+
+    public function receiveDirectDebitNotification(
+        Request $request,
+        DirectDebitNotificationService $service,
+    ): JsonResponse|Response {
         return $service->handle($request);
     }
 
