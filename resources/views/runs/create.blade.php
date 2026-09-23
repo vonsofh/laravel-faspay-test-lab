@@ -53,9 +53,15 @@
         </details>
 
         <div id="progress-panel" class="hidden" style="margin-top:20px">
-            <strong id="progress-title">Memulai pengujian…</strong>
+            <div class="progress-heading">
+                <strong id="progress-title">Memulai pengujian…</strong>
+                <span id="progress-verdict" class="hidden"></span>
+            </div>
             <div class="progress"><span id="progress-bar"></span></div>
-            <div class="meta-line"><span id="progress-copy">Menyiapkan request</span><span id="progress-summary"></span></div>
+            <div class="meta-line">
+                <span id="progress-copy">Menyiapkan request</span>
+                <span id="progress-summary"><strong id="passed-count" class="is-zero">0 berhasil</strong><strong id="failed-count" class="is-zero">0 gagal</strong></span>
+            </div>
         </div>
 
         <div class="btn-row" style="margin-top:24px">
@@ -68,7 +74,11 @@
 <p class="footer-note">Saat ini hanya pengujian QRIS QR MPM yang tersedia.</p>
 @endsection
 
-@push('head')<style>.hidden{display:none!important}</style>@endpush
+@push('head')
+<style>
+.hidden{display:none!important}.progress-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}.progress{overflow:hidden;height:7px;margin:12px 0 9px;border-radius:999px;background:#e8ebef}.progress span{display:block;height:100%;border-radius:inherit;background:#4f75a3;transition:width .25s ease,background-color .25s ease}.progress.is-success span{background:var(--green)}.progress.is-failed span,.progress.is-error span{background:var(--red)}#progress-verdict{padding:4px 8px;border-radius:999px;font-size:11px;font-weight:750}#progress-verdict.pass{background:var(--green-soft);color:var(--green)}#progress-verdict.fail{background:var(--red-soft);color:var(--red)}#progress-summary{display:flex;gap:12px}#passed-count{color:var(--green)}#failed-count{color:var(--red)}#passed-count.is-zero,#failed-count.is-zero{color:var(--muted);font-weight:500}
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -123,8 +133,13 @@ form.addEventListener('submit', async event => {
     event.preventDefault();
     const button = document.getElementById('run-all');
     const panel = document.getElementById('progress-panel');
+    const progress = panel.querySelector('.progress');
+    const verdict = document.getElementById('progress-verdict');
     button.disabled = true;
     panel.classList.remove('hidden');
+    progress.className = 'progress';
+    document.getElementById('progress-bar').style.width = '0%';
+    verdict.className = 'hidden';
     activeRun = null;
     let passed = 0;
     let failed = 0;
@@ -138,14 +153,26 @@ form.addEventListener('submit', async event => {
             const done = index + 1;
             document.getElementById('progress-bar').style.width = `${done / automatedCases.length * 100}%`;
             document.getElementById('progress-copy').textContent = `${done} dari ${automatedCases.length} selesai`;
-            document.getElementById('progress-summary').textContent = `${passed} berhasil · ${failed} gagal`;
+            const passedCount = document.getElementById('passed-count');
+            const failedCount = document.getElementById('failed-count');
+            passedCount.textContent = `${passed} berhasil`;
+            failedCount.textContent = `${failed} gagal`;
+            passedCount.classList.toggle('is-zero', passed === 0);
+            failedCount.classList.toggle('is-zero', failed === 0);
         }
-        document.getElementById('progress-title').textContent = 'Pengujian otomatis selesai';
+        const hasFailures = failed > 0;
+        progress.classList.add(hasFailures ? 'is-failed' : 'is-success');
+        document.getElementById('progress-title').textContent = hasFailures ? 'Pengujian selesai dengan kegagalan' : 'Semua pengujian otomatis berhasil';
+        verdict.textContent = hasFailures ? `${failed} GAGAL` : 'BERHASIL';
+        verdict.className = hasFailures ? 'fail' : 'pass';
         const view = document.getElementById('view-results'); view.href = activeRun.show_url; view.classList.remove('hidden');
         const exportLink = document.getElementById('export-results'); exportLink.href = activeRun.export_url; exportLink.classList.remove('hidden');
         toast(`${passed} berhasil, ${failed} gagal.`);
     } catch (error) {
+        progress.classList.add('is-error');
         document.getElementById('progress-title').textContent = 'Pengujian tidak dapat dimulai';
+        verdict.textContent = 'ERROR';
+        verdict.className = 'fail';
         toast(error.message, 'error');
     } finally { button.disabled = false; }
 });
