@@ -87,9 +87,12 @@ class RecordFaspayCallback
 
     private function headers(Request $request): array
     {
-        return collect([
-            'Content-Type', 'X-TIMESTAMP', 'X-PARTNER-ID', 'X-EXTERNAL-ID', 'CHANNEL-ID',
+        $headers = collect([
+            'Content-Type', 'X-TIMESTAMP', 'X-PARTNER-ID', 'X-EXTERNAL-ID', 'CHANNEL-ID', 'ORIGIN',
         ])->mapWithKeys(fn (string $header): array => [$header => $request->header($header)])->all();
+        $headers['X-SIGNATURE'] = filled($request->header('X-SIGNATURE')) ? '[present, redacted]' : null;
+
+        return $headers;
     }
 
     /** @return array<string, mixed> */
