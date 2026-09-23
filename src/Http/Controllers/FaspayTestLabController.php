@@ -72,7 +72,6 @@ class FaspayTestLabController extends Controller
             'merchants' => FaspayMerchant::latest()->get(),
             'account' => FaspayVaAccount::with('merchant')->where('active', true)->latest()->first(),
             'channels' => config('faspay-test-lab.va_notification.channels', []),
-            'callbacks' => FaspayCallback::with('vaAccount')->whereIn('service', ['va_inquiry', 'va_payment'])->latest()->limit(20)->get(),
         ]);
     }
 
@@ -95,6 +94,49 @@ class FaspayTestLabController extends Controller
         );
 
         return redirect()->route('faspay-test-lab.va.index')->with('status', 'Nomor VA sandbox berhasil dibuat.');
+    }
+
+    public function callbacks(Request $request): View
+    {
+        $service = $request->string('service')->toString();
+        $status = $request->string('status')->toString();
+        $query = FaspayCallback::query()->latest();
+
+        if (in_array($service, ['qris', 'va_inquiry', 'va_payment', 'direct_debit'], true)) {
+            $query->where('service', $service);
+        }
+        if ($status === 'success') {
+            $query->whereBetween('http_status', [200, 299]);
+        } elseif ($status === 'rejected') {
+            $query->where('http_status', '>=', 400)->where('http_status', '<', 500);
+        } elseif ($status === 'error') {
+            $query->where('http_status', '>=', 500);
+        }
+
+        return view('faspay-test-lab::callbacks.index', [
+            'callbacks' => $query->paginate(25)->withQueryString(),
+            'service' => $service,
+            'status' => $status,
+        ]);
+    }
+
+    public function showCallback(FaspayCallback $callback): View
+    {
+        return view('faspay-test-lab::callbacks.show', compact('callback'));
+    }
+
+    public function destroyCallback(FaspayCallback $callback): RedirectResponse
+    {
+        $callback->delete();
+
+        return redirect()->route('faspay-test-lab.callbacks.index')->with('status', 'Callback berhasil dihapus.');
+    }
+
+    public function clearCallbacks(): RedirectResponse
+    {
+        FaspayCallback::query()->delete();
+
+        return redirect()->route('faspay-test-lab.callbacks.index')->with('status', 'Semua riwayat callback berhasil dihapus.');
     }
 
     public function runs(): View

@@ -37,8 +37,11 @@ class QrisNotificationService
         }
 
         if (! $this->validSignature($request)) {
+            $this->signatureStatus($request, 'invalid');
+
             return $this->response('4015200', 'Unauthorized. [Signature]', 401);
         }
+        $this->signatureStatus($request, 'valid');
 
         $run = $this->matchingRun($body, (string) $request->header('X-PARTNER-ID'));
         if ($run === null) {
@@ -146,5 +149,12 @@ class QrisNotificationService
             'responseCode' => $code,
             'responseMessage' => $message,
         ], $status, ['X-TIMESTAMP' => now('Asia/Jakarta')->format('Y-m-d\TH:i:sP')]);
+    }
+
+    private function signatureStatus(Request $request, string $status): void
+    {
+        $request->attributes->get('faspay-test-lab.callback')?->update([
+            'signature_status' => $status,
+        ]);
     }
 }

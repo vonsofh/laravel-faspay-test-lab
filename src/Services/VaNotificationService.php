@@ -4,7 +4,6 @@ namespace Vonso\FaspayTestLab\Services;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Vonso\FaspayTestLab\Models\FaspayCallback;
 use Vonso\FaspayTestLab\Models\FaspayVaAccount;
 
 class VaNotificationService
@@ -137,27 +136,12 @@ class VaNotificationService
         ?array $responseBody = null,
     ): JsonResponse {
         $responseBody ??= ['responseCode' => $code, 'responseMessage' => $message];
-        FaspayCallback::create([
+        $request->attributes->get('faspay-test-lab.callback')?->update([
             'faspay_test_lab_va_account_id' => $account?->id,
-            'service' => 'va_'.$service,
-            'external_id' => $request->header('X-EXTERNAL-ID'),
-            'reference_no' => data_get($request->json()->all(), $service === 'payment' ? 'paymentRequestId' : 'inquiryRequestId'),
             'signature_status' => $signatureStatus,
-            'http_status' => $status,
-            'response_code' => $code,
-            'request_headers' => $this->headers($request),
-            'request_body' => $request->json()->all(),
-            'response_body' => $responseBody,
-            'client_ip' => $request->ip(),
         ]);
 
         return response()->json($responseBody, $status, ['X-TIMESTAMP' => now()->toIso8601String()], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
     }
 
-    private function headers(Request $request): array
-    {
-        return collect(['X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID', 'CHANNEL-ID'])
-            ->mapWithKeys(fn (string $header): array => [$header => $request->header($header)])
-            ->all();
-    }
 }

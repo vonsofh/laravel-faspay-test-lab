@@ -127,18 +127,13 @@ FASPAY_TEST_LAB_DIRECT_DEBIT_PASSWORD=...
 FASPAY_TEST_LAB_DIRECT_DEBIT_MERCHANT_ID=37073
 ```
 
-### Confirming whether Faspay reached Laravel
+### Callback history
 
-Every request that reaches one of the package callback routes writes two structured application log entries:
+The package includes its own callback inbox at `/faspay-test-lab/callbacks`; no third-party log viewer is required. Every request reaching a package callback route is recorded before validation, including invalid bodies, missing headers, bad signatures, unmatched transactions, throttled requests, and processing exceptions.
 
-```text
-Faspay Test Lab callback received
-Faspay Test Lab callback completed
-```
+The list can be filtered by service and outcome. Each detail page shows request metadata, sanitized headers and body, merchant response, signature status, and any processing error. Individual records or the complete history can be deleted from the UI. Signature values are never persisted.
 
-The entries contain the route name, path, source IP, HTTP status, response code, external/reference IDs, and whether a signature was present. Signatures and full payment payloads are intentionally not written to the application log.
-
-If neither entry appears after a payment, the request did not reach Laravel. Check the URL configured by Faspay, DNS/proxy access logs, firewall or WAF rules, and any cached Laravel routes. A manual `POST` to the URL should at least produce the `callback received` entry even when the body or signature is invalid.
+If no record appears after a payment, the request did not reach Laravel. Check the URL configured by Faspay, DNS/proxy access logs, firewall or WAF rules, and cached Laravel routes.
 
 ---
 

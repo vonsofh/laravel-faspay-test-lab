@@ -10,6 +10,8 @@ class FaspayCallback extends Model
     protected $fillable = [
         'faspay_test_lab_va_account_id',
         'service',
+        'request_method',
+        'request_path',
         'external_id',
         'reference_no',
         'signature_status',
@@ -18,7 +20,10 @@ class FaspayCallback extends Model
         'request_headers',
         'request_body',
         'response_body',
+        'error',
         'client_ip',
+        'content_type',
+        'user_agent',
     ];
 
     public function getTable(): string

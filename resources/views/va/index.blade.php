@@ -72,25 +72,9 @@
 @endif
 
 <section class="panel">
-    <div class="panel-head"><div><h2>3. Callback VA terbaru</h2><p class="subtle">Request valid maupun ditolak tersimpan sebagai evidence terisolasi.</p></div></div>
-    @if($callbacks->isEmpty())
-        <p class="subtle">Belum ada callback VA yang diterima.</p>
-    @else
-        <table>
-            <thead><tr><th>Waktu</th><th>Layanan</th><th>Referensi</th><th>Signature</th><th>Respons</th><th>IP</th></tr></thead>
-            <tbody>
-                @foreach($callbacks as $callback)
-                    <tr>
-                        <td>{{ $callback->created_at->format('d M Y, H:i:s') }}</td>
-                        <td>{{ $callback->service === 'va_inquiry' ? 'Inquiry' : 'Payment' }}</td>
-                        <td><span class="code">{{ $callback->reference_no ?? '—' }}</span></td>
-                        <td><span class="status {{ $callback->signature_status === 'valid' ? 'pass' : ($callback->signature_status === 'invalid' ? 'fail' : 'waiting') }}">{{ $callback->signature_status }}</span></td>
-                        <td><span class="code">{{ $callback->response_code }}</span></td>
-                        <td>{{ $callback->client_ip ?? '—' }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+    <div class="panel-head">
+        <div><h2>3. Riwayat callback</h2><p class="subtle">Semua callback QRIS, VA, dan Direct Debit tersimpan di Test Lab.</p></div>
+        <a class="btn secondary" href="{{ route('faspay-test-lab.callbacks.index', ['service' => 'va_payment']) }}">Buka riwayat</a>
+    </div>
 </section>
 @endsection

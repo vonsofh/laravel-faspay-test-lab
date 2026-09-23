@@ -5,7 +5,6 @@ namespace Vonso\FaspayTestLab\Services;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Vonso\FaspayTestLab\Models\FaspayCallback;
 
 class DirectDebitNotificationService
 {
@@ -61,16 +60,8 @@ class DirectDebitNotificationService
             'response_date' => now()->format('Y-m-d H:i:s'),
         ];
 
-        FaspayCallback::create([
-            'service' => 'direct_debit',
-            'reference_no' => $requestBody['trx_id'] ?? null,
+        $request->attributes->get('faspay-test-lab.callback')?->update([
             'signature_status' => $signatureStatus,
-            'http_status' => $status,
-            'response_code' => $code,
-            'request_headers' => ['Content-Type' => $request->header('Content-Type')],
-            'request_body' => $requestBody,
-            'response_body' => $body,
-            'client_ip' => $request->ip(),
         ]);
 
         if (! $xml) {
