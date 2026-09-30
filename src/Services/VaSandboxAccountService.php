@@ -11,11 +11,11 @@ class VaSandboxAccountService
 {
     public function create(
         FaspayMerchant $merchant,
-        string $channelCode,
+        array $channel,
         string $displayName,
         int $amountMinor,
     ): FaspayVaAccount {
-        $channel = config("faspay-test-lab.va_notification.channels.{$channelCode}");
+        $channelCode = (string) ($channel['code'] ?? '');
         $prefix = preg_replace('/\D+/', '', (string) data_get($channel, 'prefix')) ?? '';
         if (! in_array(strlen($prefix), [6, 8], true)) {
             throw new RuntimeException('Prefix VA sandbox harus 6 atau 8 digit.');

@@ -41,7 +41,7 @@ Route::post(
 )->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.qris.notification');
 
 Route::post(
-    config('faspay-test-lab.va_notification.inquiry_path', 'faspay/sandbox/notification/v1.0/transfer-va/inquiry'),
+    config('faspay-test-lab.va_inquiry.path', 'faspay/sandbox/v1.0/transfer-va/inquiry'),
     [FaspayTestLabController::class, 'receiveVaInquiry'],
 )->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.va.inquiry');
 

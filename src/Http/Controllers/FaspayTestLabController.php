@@ -16,6 +16,7 @@ use Vonso\FaspayTestLab\Models\FaspayTestRun;
 use Vonso\FaspayTestLab\Models\FaspayVaAccount;
 use Vonso\FaspayTestLab\Services\DirectDebitNotificationService;
 use Vonso\FaspayTestLab\Services\FaspayExcelExportService;
+use Vonso\FaspayTestLab\Services\PaymentChannelInquiryService;
 use Vonso\FaspayTestLab\Services\QrisNotificationService;
 use Vonso\FaspayTestLab\Services\QrisFunctionalTestService;
 use Vonso\FaspayTestLab\Services\VaNotificationService;
@@ -66,29 +67,59 @@ class FaspayTestLabController extends Controller
         ]);
     }
 
-    public function va(): View
+    public function va(Request $request, PaymentChannelInquiryService $channelInquiry): View
     {
+        $merchants = FaspayMerchant::latest()->get();
+        $account = FaspayVaAccount::with('merchant')->where('active', true)->latest()->first();
+        $merchant = $merchants->firstWhere('id', $request->integer('merchant'))
+            ?? $account?->merchant
+            ?? $merchants->first();
+        $channels = [];
+        $channelError = null;
+        if ($merchant !== null) {
+            try {
+                $channels = $channelInquiry->channels($merchant);
+            } catch (\RuntimeException $exception) {
+                $channelError = $exception->getMessage();
+            }
+        }
+
         return view('faspay-test-lab::va.index', [
-            'merchants' => FaspayMerchant::latest()->get(),
-            'account' => FaspayVaAccount::with('merchant')->where('active', true)->latest()->first(),
-            'channels' => config('faspay-test-lab.va_notification.channels', []),
+            'merchants' => $merchants,
+            'selectedMerchant' => $merchant,
+            'account' => $account,
+            'channels' => $channels,
+            'channelError' => $channelError,
         ]);
     }
 
-    public function storeVaAccount(Request $request, VaSandboxAccountService $accounts): RedirectResponse
+    public function storeVaAccount(
+        Request $request,
+        VaSandboxAccountService $accounts,
+        PaymentChannelInquiryService $channelInquiry,
+    ): RedirectResponse
     {
         $merchantTable = config('faspay-test-lab.tables.merchants', 'faspay_test_lab_merchants');
-        $channelCodes = array_keys(config('faspay-test-lab.va_notification.channels', []));
         $data = $request->validate([
             'merchant_id' => ['required', "exists:{$merchantTable},id"],
-            'channel_code' => ['required', 'string', 'in:'.implode(',', $channelCodes)],
+            'channel_code' => ['required', 'string'],
             'display_name' => ['required', 'string', 'max:30', 'regex:/^[A-Za-z0-9 ]+$/'],
             'amount' => ['required', 'integer', 'min:1000', 'max:999999999'],
         ]);
 
+        $merchant = FaspayMerchant::findOrFail($data['merchant_id']);
+        try {
+            $channel = collect($channelInquiry->channels($merchant))->firstWhere('code', $data['channel_code']);
+        } catch (\RuntimeException $exception) {
+            return back()->withInput()->withErrors(['channel_code' => $exception->getMessage()]);
+        }
+        if ($channel === null) {
+            return back()->withInput()->withErrors(['channel_code' => 'Kanal tidak tersedia untuk merchant ini.']);
+        }
+
         $accounts->create(
-            FaspayMerchant::findOrFail($data['merchant_id']),
-            $data['channel_code'],
+            $merchant,
+            $channel,
             $data['display_name'],
             ((int) $data['amount']) * 100,
         );

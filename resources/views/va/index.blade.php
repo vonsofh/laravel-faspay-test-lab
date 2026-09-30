@@ -7,7 +7,7 @@
     <div>
         <p class="eyebrow">Virtual Account</p>
         <h1>Sandbox callback lab</h1>
-        <p class="lead">Buat nomor VA uji yang terisolasi, lalu gunakan Inquiry dan Payment URL ini di simulator Faspay.</p>
+        <p class="lead">Buat nomor VA uji yang terisolasi, lalu gunakan endpoint Static VA sesuai fungsi masing-masing.</p>
     </div>
 </div>
 
@@ -26,18 +26,21 @@
                     <label for="merchant_id">Merchant</label>
                     <select id="merchant_id" name="merchant_id" required>
                         @foreach($merchants as $merchant)
-                            <option value="{{ $merchant->id }}" @selected((string) old('merchant_id', $account?->faspay_merchant_id) === (string) $merchant->id)>{{ $merchant->name }} · {{ $merchant->partner_id }}</option>
+                            <option value="{{ $merchant->id }}" @selected((string) old('merchant_id', $selectedMerchant?->id) === (string) $merchant->id)>{{ $merchant->name }} · {{ $merchant->partner_id }}</option>
                         @endforeach
                     </select>
                     @error('merchant_id')<div class="error">{{ $message }}</div>@enderror
                 </div>
                 <div class="field">
                     <label for="channel_code">Bank</label>
-                    <select id="channel_code" name="channel_code" required>
-                        @foreach($channels as $code => $channel)
-                            <option value="{{ $code }}" @selected(old('channel_code', $account?->channel_code) === (string) $code)>{{ $channel['name'] }} · {{ $channel['prefix'] }}</option>
+                    <select id="channel_code" name="channel_code" required {{ $channels === [] ? 'disabled' : '' }}>
+                        @foreach($channels as $channel)
+                            <option value="{{ $channel['code'] }}" @selected(old('channel_code', $account?->channel_code) === $channel['code'])>{{ $channel['name'] }} · {{ $channel['prefix'] }}</option>
                         @endforeach
                     </select>
+                    <div class="help">Daftar kanal diambil dari Faspay Payment Channel Inquiry.</div>
+                    @if($channelError)<div class="error">{{ $channelError }}</div>@endif
+                    @if(!$channelError && $channels === [])<div class="error">Tidak ada kanal VA berprefix yang tersedia untuk merchant ini.</div>@endif
                     @error('channel_code')<div class="error">{{ $message }}</div>@enderror
                 </div>
                 <div class="field">
@@ -51,7 +54,7 @@
                     @error('amount')<div class="error">{{ $message }}</div>@enderror
                 </div>
             </div>
-            <div class="btn-row"><button class="btn" type="submit">{{ $account ? 'Buat nomor uji baru' : 'Buat nomor VA uji' }}</button></div>
+            <div class="btn-row"><button class="btn" type="submit" {{ $channels === [] ? 'disabled' : '' }}>{{ $account ? 'Buat nomor uji baru' : 'Buat nomor VA uji' }}</button></div>
         </form>
     @endif
 </section>
@@ -64,8 +67,8 @@
             <tr><th>Nomor Virtual Account</th><td><strong class="code">{{ $account->virtual_account_no }}</strong></td><th>Nominal</th><td>Rp {{ number_format($account->amount_minor / 100, 0, ',', '.') }}</td></tr>
             <tr><th>Partner Service ID</th><td>{{ $account->partner_service_id }}</td><th>Customer No</th><td>{{ $account->customer_no }}</td></tr>
             <tr><th>Nama</th><td>{{ $account->display_name }}</td><th>Bank</th><td>{{ $account->channel_name }}</td></tr>
-            <tr><th>Inquiry URL</th><td colspan="3"><span class="code">{{ route('faspay-test-lab.va.inquiry') }}</span></td></tr>
-            <tr><th>Payment URL</th><td colspan="3"><span class="code">{{ route('faspay-test-lab.va.payment') }}</span></td></tr>
+            <tr><th>Static VA Inquiry URL</th><td colspan="3"><span class="code">{{ route('faspay-test-lab.va.inquiry') }}</span></td></tr>
+            <tr><th>VA Payment Notification URL</th><td colspan="3"><span class="code">{{ route('faspay-test-lab.va.payment') }}</span></td></tr>
         </tbody>
     </table>
 </section>
@@ -78,3 +81,13 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+document.getElementById('merchant_id')?.addEventListener('change', event => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('merchant', event.target.value);
+    window.location.assign(url.toString());
+});
+</script>
+@endpush

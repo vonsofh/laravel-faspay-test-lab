@@ -67,12 +67,15 @@ return [
         ),
     ],
 
+    'va_inquiry' => [
+        'path' => env(
+            'FASPAY_TEST_LAB_VA_INQUIRY_PATH',
+            'faspay/sandbox/v1.0/transfer-va/inquiry',
+        ),
+    ],
+
     'va_notification' => [
         'enabled' => env('FASPAY_TEST_LAB_VA_NOTIFICATION_ENABLED', true),
-        'inquiry_path' => env(
-            'FASPAY_TEST_LAB_VA_INQUIRY_PATH',
-            'faspay/sandbox/notification/v1.0/transfer-va/inquiry',
-        ),
         'payment_path' => env(
             'FASPAY_TEST_LAB_VA_PAYMENT_PATH',
             'faspay/sandbox/notification/v1.0/transfer-va/payment',
@@ -85,9 +88,31 @@ return [
             'FASPAY_TEST_LAB_VA_FASPAY_PUBLIC_KEY_PATH',
             env('FASPAY_TEST_LAB_FASPAY_PUBLIC_KEY_PATH', env('FASPAY_SANDBOX_PUBLIC_KEY_PATH')),
         ),
-        'channels' => [
-            '402' => ['name' => 'Permata Virtual Account', 'prefix' => '370731'],
+        // Payment Channel Inquiry supplies channel codes and names, but not the
+        // merchant-specific partnerServiceId prefix required to mint a test VA.
+        'channel_prefixes' => [
+            '402' => '370731',
+            '408' => '37073002',
+            '708' => '370735',
+            '800' => '370732',
+            '802' => '37073001',
+            '818' => '370734',
+            '825' => '370734',
         ],
+    ],
+
+    'payment_channel_inquiry' => [
+        'enabled' => env('FASPAY_TEST_LAB_PAYMENT_CHANNEL_INQUIRY_ENABLED', true),
+        'path' => env('FASPAY_TEST_LAB_PAYMENT_CHANNEL_INQUIRY_PATH', '/cvr/100001/10'),
+        'user_id' => env(
+            'FASPAY_TEST_LAB_DEBIT_USER_ID',
+            env('FASPAY_SANDBOX_DEBIT_USER_ID'),
+        ),
+        'password' => env(
+            'FASPAY_TEST_LAB_DEBIT_PASSWORD',
+            env('FASPAY_SANDBOX_DEBIT_PASSWORD'),
+        ),
+        'timeout' => (int) env('FASPAY_TEST_LAB_PAYMENT_CHANNEL_INQUIRY_TIMEOUT', 15),
     ],
 
     'direct_debit_notification' => [

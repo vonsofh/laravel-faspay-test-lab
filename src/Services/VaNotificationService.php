@@ -47,7 +47,9 @@ class VaNotificationService
             return $this->respond($request, $service, $serviceCode, null, '404'.$serviceCode.'11', 'Invalid Virtual Account', 404, 'not_checked');
         }
 
-        $configuredPath = (string) config("faspay-test-lab.va_notification.{$service}_path");
+        $configuredPath = $service === 'inquiry'
+            ? (string) config('faspay-test-lab.va_inquiry.path')
+            : (string) config('faspay-test-lab.va_notification.payment_path');
         $validSignature = $this->signatureVerifier->verify($request, [
             '/'.ltrim($request->path(), '/'),
             $request->fullUrl(),
