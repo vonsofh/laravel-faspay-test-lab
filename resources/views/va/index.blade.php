@@ -33,14 +33,12 @@
                 </div>
                 <div class="field">
                     <label for="channel_code">Bank</label>
-                    <select id="channel_code" name="channel_code" required {{ $channels === [] ? 'disabled' : '' }}>
+                    <select id="channel_code" name="channel_code" required>
                         @foreach($channels as $channel)
                             <option value="{{ $channel['code'] }}" @selected(old('channel_code', $account?->channel_code) === $channel['code'])>{{ $channel['name'] }} · {{ $channel['prefix'] }}</option>
                         @endforeach
                     </select>
-                    <div class="help">Daftar kanal diambil dari Faspay Payment Channel Inquiry.</div>
-                    @if($channelError)<div class="error">{{ $channelError }}</div>@endif
-                    @if(!$channelError && $channels === [])<div class="error">Tidak ada kanal VA berprefix yang tersedia untuk merchant ini.</div>@endif
+                    <div class="help">Pilih bank untuk membuat nomor VA uji sandbox.</div>
                     @error('channel_code')<div class="error">{{ $message }}</div>@enderror
                 </div>
                 <div class="field">
@@ -54,7 +52,7 @@
                     @error('amount')<div class="error">{{ $message }}</div>@enderror
                 </div>
             </div>
-            <div class="btn-row"><button class="btn" type="submit" {{ $channels === [] ? 'disabled' : '' }}>{{ $account ? 'Buat nomor uji baru' : 'Buat nomor VA uji' }}</button></div>
+            <div class="btn-row"><button class="btn" type="submit">{{ $account ? 'Buat nomor uji baru' : 'Buat nomor VA uji' }}</button></div>
         </form>
     @endif
 </section>

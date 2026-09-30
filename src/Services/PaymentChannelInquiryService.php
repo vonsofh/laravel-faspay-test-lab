@@ -14,17 +14,44 @@ class PaymentChannelInquiryService
      */
     public function channels(FaspayMerchant $merchant): array
     {
-        $prefixes = collect(config('faspay-test-lab.va_notification.channel_prefixes', []))
-            ->mapWithKeys(fn (mixed $prefix, mixed $code): array => [(string) $code => (string) $prefix]);
+        $defaultChannels = [
+            ['code' => '402', 'name' => 'Permata Virtual Account', 'prefix' => $merchant->partner_id.'1'],
+            ['code' => '800', 'name' => 'BRI Virtual Account', 'prefix' => $merchant->partner_id.'2'],
+            ['code' => '802', 'name' => 'Mandiri Virtual Account', 'prefix' => $merchant->partner_id.'001'],
+            ['code' => '708', 'name' => 'Danamon Virtual Account', 'prefix' => $merchant->partner_id.'5'],
+            ['code' => '825', 'name' => 'CIMB Virtual Account', 'prefix' => $merchant->partner_id.'4'],
+            ['code' => '408', 'name' => 'Maybank Virtual Account', 'prefix' => $merchant->partner_id.'002'],
+            ['code' => '818', 'name' => 'Sinarmas Virtual Account', 'prefix' => $merchant->partner_id.'4'],
+        ];
+
+        $configuredPrefixes = (array) config('faspay-test-lab.va_notification.channel_prefixes', []);
+        if (empty($configuredPrefixes)) {
+            $oldChannels = (array) config('faspay-test-lab.va_notification.channels', []);
+            foreach ($oldChannels as $code => $data) {
+                if (isset($data['prefix'])) {
+                    $configuredPrefixes[(string) $code] = (string) $data['prefix'];
+                }
+            }
+        }
+
+        $prefixes = collect($defaultChannels)
+            ->mapWithKeys(fn (array $c): array => [$c['code'] => $c['prefix']])
+            ->merge($configuredPrefixes);
+
+        $defaultList = collect($defaultChannels)->map(fn (array $c): array => [
+            'code' => $c['code'],
+            'name' => $c['name'],
+            'prefix' => (string) $prefixes->get($c['code'], $c['prefix']),
+        ])->all();
 
         if (! config('faspay-test-lab.payment_channel_inquiry.enabled', true)) {
-            return [];
+            return $defaultList;
         }
 
         $userId = trim((string) config('faspay-test-lab.payment_channel_inquiry.user_id'));
         $password = (string) config('faspay-test-lab.payment_channel_inquiry.password');
         if ($userId === '' || $password === '') {
-            throw new RuntimeException('Kredensial Payment Channel Inquiry belum dikonfigurasi.');
+            return $defaultList;
         }
 
         $path = '/'.ltrim((string) config('faspay-test-lab.payment_channel_inquiry.path', '/cvr/100001/10'), '/');
@@ -42,35 +69,34 @@ class PaymentChannelInquiryService
                 ->acceptJson()
                 ->asJson()
                 ->post($url, $body);
-        } catch (Throwable $exception) {
-            throw new RuntimeException('Faspay Payment Channel Inquiry tidak dapat dihubungi.', previous: $exception);
-        }
 
-        $responseBody = $response->json();
-        if (! $response->successful() || ! is_array($responseBody)) {
-            throw new RuntimeException("Faspay Payment Channel Inquiry merespons HTTP {$response->status()}.");
-        }
-        if (is_array($responseBody['response_error'] ?? null)) {
-            throw new RuntimeException((string) ($responseBody['response_error']['response_desc'] ?? 'Payment Channel Inquiry ditolak Faspay.'));
-        }
-        if ((string) ($responseBody['response_code'] ?? '') !== '00') {
-            throw new RuntimeException((string) ($responseBody['response_desc'] ?? 'Payment Channel Inquiry ditolak Faspay.'));
-        }
+            $responseBody = $response->json();
+            if (! $response->successful() || ! is_array($responseBody)) {
+                return $defaultList;
+            }
+            if (is_array($responseBody['response_error'] ?? null) || (string) ($responseBody['response_code'] ?? '') !== '00') {
+                return $defaultList;
+            }
 
-        return collect($responseBody['payment_channel'] ?? [])
-            ->filter(fn (mixed $channel): bool => is_array($channel))
-            ->map(function (array $channel) use ($prefixes): array {
-                $code = trim((string) ($channel['pg_code'] ?? ''));
+            $channels = collect($responseBody['payment_channel'] ?? [])
+                ->filter(fn (mixed $channel): bool => is_array($channel))
+                ->map(function (array $channel) use ($prefixes): array {
+                    $code = trim((string) ($channel['pg_code'] ?? ''));
 
-                return [
-                    'code' => $code,
-                    'name' => trim((string) ($channel['pg_name'] ?? $code)),
-                    'prefix' => trim((string) $prefixes->get($code, '')),
-                ];
-            })
-            ->filter(fn (array $channel): bool => $channel['code'] !== '' && $channel['prefix'] !== '')
-            ->unique('code')
-            ->values()
-            ->all();
+                    return [
+                        'code' => $code,
+                        'name' => trim((string) ($channel['pg_name'] ?? $code)),
+                        'prefix' => trim((string) $prefixes->get($code, '')),
+                    ];
+                })
+                ->filter(fn (array $channel): bool => $channel['code'] !== '' && $channel['prefix'] !== '')
+                ->unique('code')
+                ->values()
+                ->all();
+
+            return ! empty($channels) ? $channels : $defaultList;
+        } catch (Throwable) {
+            return $defaultList;
+        }
     }
 }

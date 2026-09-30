@@ -74,22 +74,13 @@ class FaspayTestLabController extends Controller
         $merchant = $merchants->firstWhere('id', $request->integer('merchant'))
             ?? $account?->merchant
             ?? $merchants->first();
-        $channels = [];
-        $channelError = null;
-        if ($merchant !== null) {
-            try {
-                $channels = $channelInquiry->channels($merchant);
-            } catch (\RuntimeException $exception) {
-                $channelError = $exception->getMessage();
-            }
-        }
+        $channels = $merchant !== null ? $channelInquiry->channels($merchant) : [];
 
         return view('faspay-test-lab::va.index', [
             'merchants' => $merchants,
             'selectedMerchant' => $merchant,
             'account' => $account,
             'channels' => $channels,
-            'channelError' => $channelError,
         ]);
     }
 
@@ -108,13 +99,9 @@ class FaspayTestLabController extends Controller
         ]);
 
         $merchant = FaspayMerchant::findOrFail($data['merchant_id']);
-        try {
-            $channel = collect($channelInquiry->channels($merchant))->firstWhere('code', $data['channel_code']);
-        } catch (\RuntimeException $exception) {
-            return back()->withInput()->withErrors(['channel_code' => $exception->getMessage()]);
-        }
+        $channel = collect($channelInquiry->channels($merchant))->firstWhere('code', $data['channel_code']);
         if ($channel === null) {
-            return back()->withInput()->withErrors(['channel_code' => 'Kanal tidak tersedia untuk merchant ini.']);
+            return back()->withInput()->withErrors(['channel_code' => 'Kanal tidak ditemukan.']);
         }
 
         $accounts->create(
