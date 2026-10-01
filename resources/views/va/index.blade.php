@@ -65,8 +65,8 @@
             <tr><th>Nomor Virtual Account</th><td><strong class="code">{{ $account->virtual_account_no }}</strong></td><th>Nominal</th><td>Rp {{ number_format($account->amount_minor / 100, 0, ',', '.') }}</td></tr>
             <tr><th>Partner Service ID</th><td>{{ $account->partner_service_id }}</td><th>Customer No</th><td>{{ $account->customer_no }}</td></tr>
             <tr><th>Nama</th><td>{{ $account->display_name }}</td><th>Bank</th><td>{{ $account->channel_name }}</td></tr>
-            <tr><th>Static VA Inquiry URL</th><td colspan="3"><span class="code">{{ route('faspay-test-lab.va.inquiry') }}</span></td></tr>
-            <tr><th>VA Payment Notification URL</th><td colspan="3"><span class="code">{{ route('faspay-test-lab.va.payment') }}</span></td></tr>
+            <tr><th>Static VA Inquiry URL</th><td colspan="3"><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.va.inquiry') ? route('faspay-test-lab.va.inquiry') : (\Illuminate\Support\Facades\Route::has('faspay.va.inquiry') ? route('faspay.va.inquiry', ['mode' => 'sandbox']) : url(config('faspay-test-lab.va_inquiry.path', 'faspay/sandbox/v1.0/transfer-va/inquiry'))) }}</span></td></tr>
+            <tr><th>VA Payment Notification URL</th><td colspan="3"><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.va.payment') ? route('faspay-test-lab.va.payment') : (\Illuminate\Support\Facades\Route::has('faspay.va.payment') ? route('faspay.va.payment', ['mode' => 'sandbox']) : url(config('faspay-test-lab.va_notification.payment_path', 'faspay/sandbox/notification/v1.0/transfer-va/payment'))) }}</span></td></tr>
         </tbody>
     </table>
 </section>

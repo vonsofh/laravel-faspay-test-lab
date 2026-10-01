@@ -15,9 +15,9 @@
     <div class="panel-head"><div><h2>URL notifikasi sandbox</h2><p class="subtle">Gunakan URL persis berikut pada konfigurasi Faspay.</p></div></div>
     <table>
         <tbody>
-            <tr><th>VA Static</th><td><span class="code">{{ route('faspay-test-lab.va.payment') }}</span></td></tr>
-            <tr><th>QRIS</th><td><span class="code">{{ route('faspay-test-lab.qris.notification') }}</span></td></tr>
-            <tr><th>Direct Debit</th><td><span class="code">{{ route('faspay-test-lab.direct-debit.notification') }}</span></td></tr>
+            <tr><th>VA Static</th><td><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.va.payment') ? route('faspay-test-lab.va.payment') : (\Illuminate\Support\Facades\Route::has('faspay.va.payment') ? route('faspay.va.payment', ['mode' => 'sandbox']) : url(config('faspay-test-lab.va_notification.payment_path', 'faspay/sandbox/notification/v1.0/transfer-va/payment'))) }}</span></td></tr>
+            <tr><th>QRIS</th><td><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.qris.notification') ? route('faspay-test-lab.qris.notification') : url(config('faspay-test-lab.qris_notification.path', 'faspay/sandbox/notification/v1.0/qr/qr-mpm-notify')) }}</span></td></tr>
+            <tr><th>Direct Debit</th><td><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.direct-debit.notification') ? route('faspay-test-lab.direct-debit.notification') : (\Illuminate\Support\Facades\Route::has('faspay.debit.payment-notification') ? route('faspay.debit.payment-notification', ['mode' => 'sandbox']) : url(config('faspay-test-lab.direct_debit_notification.path', 'faspay/sandbox/notification/v1.0/debit/notify'))) }}</span></td></tr>
         </tbody>
     </table>
 </section>
