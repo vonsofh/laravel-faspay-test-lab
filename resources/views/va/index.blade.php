@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $hasHostVa = \Illuminate\Support\Facades\Route::has('faspay.va.inquiry') || \Illuminate\Support\Facades\Route::has('admin.faspay.index');
+    $hasHostVa = \Illuminate\Support\Facades\Route::has('faspay.va.inquiry');
 @endphp
 <div class="page-head">
     <div>
@@ -15,16 +15,12 @@
 </div>
 
 @if($hasHostVa)
-<section class="panel" style="border-left: 4px solid #3b82f6; background: #eff6ff;">
-    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-        <div>
-            <h2 style="font-size:15px; margin:0 0 4px; color:#1e40af;">Aplikasi utama memiliki modul VA bawaan</h2>
-            <p style="margin:0; font-size:13px; color:#3b82f6;">Endpoint <code>faspay/{mode}/v1.0/transfer-va/*</code> ditangani langsung oleh sistem aplikasi utama Anda (Sikeu Al Hijrah). Pengujian nomor VA uji sebaiknya dilakukan langsung dari modul bawaan.</p>
-        </div>
-        @if(\Illuminate\Support\Facades\Route::has('admin.faspay.index'))
-            <a class="btn" style="background:#1e40af; border-color:#1e40af; color:#fff;" href="{{ route('admin.faspay.index', ['tab' => 'sandbox']) }}">Buka VA Sandbox Utama</a>
-        @endif
-    </div>
+<section class="panel" style="border-left: 4px solid var(--line); background: var(--soft);">
+    <h2 style="font-size:14px; margin:0 0 4px;">Informasi Integrasi Virtual Account</h2>
+    <p style="margin:0; font-size:13px; color:var(--muted);">
+        Aplikasi Anda sudah memiliki route penanganan Virtual Account bawaan (<code>faspay/{mode}/v1.0/transfer-va/*</code>).
+        Pengujian nomor VA disarankan menggunakan modul atau pengaturan bawaan aplikasi Anda agar alur inquiry dan payment terhubung langsung ke data sistem.
+    </p>
 </section>
 @endif
 
