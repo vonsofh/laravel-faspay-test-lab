@@ -8,7 +8,7 @@
     $body = $callback->request_body ?? [];
     $requiredHeaders = $callback->service === 'direct_debit'
         ? ['Content-Type']
-        : ['Content-Type', 'X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID', 'CHANNEL-ID'];
+        : ['Content-Type', 'X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID'];
     $missingHeaders = collect($requiredHeaders)->filter(fn ($header) => blank($headers[$header] ?? null))->values();
     $detectedRequest = match (true) {
         $callback->service === 'qris' && isset($body['originalPartnerReferenceNo'], $body['originalReferenceNo'], $body['latestTransactionStatus']) => 'QRIS Payment Notification',

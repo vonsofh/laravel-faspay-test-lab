@@ -36,7 +36,7 @@ class VaNotificationService
             return $this->respond($request, $service, $serviceCode, null, '4002502', 'Invalid Mandatory Field paidAmount', 400, 'not_checked');
         }
 
-        foreach (['X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID', 'CHANNEL-ID'] as $header) {
+        foreach (['X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID'] as $header) {
             if (blank($request->header($header))) {
                 return $this->respond($request, $service, $serviceCode, null, '400'.$serviceCode.'02', "Invalid Mandatory Field {$header}", 400, 'not_checked');
             }

@@ -23,7 +23,7 @@ class QrisNotificationService
             }
         }
 
-        foreach (['X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID', 'CHANNEL-ID'] as $header) {
+        foreach (['X-TIMESTAMP', 'X-SIGNATURE', 'X-PARTNER-ID', 'X-EXTERNAL-ID'] as $header) {
             if (blank($request->header($header))) {
                 return $this->response('4005202', "Invalid Mandatory Field {$header}", 400);
             }
