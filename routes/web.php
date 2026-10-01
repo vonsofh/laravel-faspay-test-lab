@@ -35,22 +35,28 @@ Route::prefix($prefix)
         Route::get('/runs/{run}/export', [FaspayTestLabController::class, 'export'])->name('runs.export');
     });
 
-Route::post(
-    config('faspay-test-lab.qris_notification.path', 'faspay/sandbox/notification/v1.0/qr/qr-mpm-notify'),
-    [FaspayTestLabController::class, 'receiveQrisNotification'],
-)->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.qris.notification');
+if (config('faspay-test-lab.qris_notification.enabled', true)) {
+    Route::post(
+        config('faspay-test-lab.qris_notification.path', 'faspay/sandbox/notification/v1.0/qr/qr-mpm-notify'),
+        [FaspayTestLabController::class, 'receiveQrisNotification'],
+    )->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.qris.notification');
+}
 
-Route::post(
-    config('faspay-test-lab.va_inquiry.path', 'faspay/sandbox/v1.0/transfer-va/inquiry'),
-    [FaspayTestLabController::class, 'receiveVaInquiry'],
-)->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.va.inquiry');
+if (config('faspay-test-lab.va_notification.enabled', false)) {
+    Route::post(
+        config('faspay-test-lab.va_inquiry.path', 'faspay/sandbox/v1.0/transfer-va/inquiry'),
+        [FaspayTestLabController::class, 'receiveVaInquiry'],
+    )->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.va.inquiry');
 
-Route::post(
-    config('faspay-test-lab.va_notification.payment_path', 'faspay/sandbox/notification/v1.0/transfer-va/payment'),
-    [FaspayTestLabController::class, 'receiveVaPayment'],
-)->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.va.payment');
+    Route::post(
+        config('faspay-test-lab.va_notification.payment_path', 'faspay/sandbox/notification/v1.0/transfer-va/payment'),
+        [FaspayTestLabController::class, 'receiveVaPayment'],
+    )->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.va.payment');
+}
 
-Route::post(
-    config('faspay-test-lab.direct_debit_notification.path', 'faspay/sandbox/notification/v1.0/debit/notify'),
-    [FaspayTestLabController::class, 'receiveDirectDebitNotification'],
-)->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.direct-debit.notification');
+if (config('faspay-test-lab.direct_debit_notification.enabled', false)) {
+    Route::post(
+        config('faspay-test-lab.direct_debit_notification.path', 'faspay/sandbox/notification/v1.0/debit/notify'),
+        [FaspayTestLabController::class, 'receiveDirectDebitNotification'],
+    )->middleware([RecordFaspayCallback::class, 'throttle:240,1'])->name('faspay-test-lab.direct-debit.notification');
+}

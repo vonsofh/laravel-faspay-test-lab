@@ -75,7 +75,9 @@ return [
     ],
 
     'va_notification' => [
-        'enabled' => env('FASPAY_TEST_LAB_VA_NOTIFICATION_ENABLED', true),
+        // Disabled by default so Test Lab does not hijack host application VA routes.
+        // Enable only if your host application does not handle VA callbacks directly.
+        'enabled' => env('FASPAY_TEST_LAB_VA_NOTIFICATION_ENABLED', false),
         'payment_path' => env(
             'FASPAY_TEST_LAB_VA_PAYMENT_PATH',
             'faspay/sandbox/notification/v1.0/transfer-va/payment',
@@ -116,7 +118,7 @@ return [
     ],
 
     'direct_debit_notification' => [
-        'enabled' => env('FASPAY_TEST_LAB_DIRECT_DEBIT_NOTIFICATION_ENABLED', true),
+        'enabled' => env('FASPAY_TEST_LAB_DIRECT_DEBIT_NOTIFICATION_ENABLED', false),
         'path' => env(
             'FASPAY_TEST_LAB_DIRECT_DEBIT_NOTIFICATION_PATH',
             'faspay/sandbox/notification/v1.0/debit/notify',
