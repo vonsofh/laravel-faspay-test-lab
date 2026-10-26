@@ -18,7 +18,36 @@ class FaspayExcelExportService
         '18.21' => 27, '18.22' => 28, '18.23' => 29, '18.24' => 30, '18.25' => 32,
     ];
 
+    private const VA_ROWS = [
+        '11.1' => 9,
+        '11.2' => 11,
+        '11.3' => 12,
+        '11.4' => 13,
+        '11.5' => 14,
+        '11.6' => 15,
+        '11.7' => 16,
+        '11.8' => 17,
+        '11.9' => 18,
+        '11.10' => 19,
+        '11.11' => 20,
+        '11.12' => 21,
+        '11.13' => 22,
+        '11.14' => 23,
+        '11.15' => 24,
+        '11.16' => 26,
+        '11.17' => 27,
+    ];
+
     public function export(FaspayTestRun $run, string $path): string
+    {
+        if ($run->service === 'va') {
+            return $this->exportVa($run, $path);
+        }
+
+        return $this->exportQris($run, $path);
+    }
+
+    private function exportQris(FaspayTestRun $run, string $path): string
     {
         $templatePath = $this->templatePath('FASPAY QRIS - Skenario Functional Test_V.3.2.xlsx');
 
@@ -32,6 +61,51 @@ class FaspayExcelExportService
 
         foreach ($run->results as $item) {
             $row = self::ROWS[$item['test_no']] ?? null;
+            if ($row === null) {
+                continue;
+            }
+
+            if (is_array($item['request']) && is_array($item['response'])) {
+                $sheet->setCellValue('E'.$row, $this->formatRequest($item['request']));
+                $sheet->setCellValue('F'.$row, $this->formatResponse($item['response']));
+            } else {
+                $sheet->setCellValue('E'.$row, null);
+                $sheet->setCellValue('F'.$row, null);
+            }
+
+            $sheet->setCellValue('G'.$row, $item['result']);
+            if ($item['execution_type'] === 'manual' && filled($item['notes'])) {
+                $notes = trim((string) $sheet->getCell('H'.$row)->getValue());
+                $sheet->setCellValue('H'.$row, trim($notes."\n".$item['notes']));
+            }
+            $sheet->getStyle('E'.$row.':H'.$row)->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
+        }
+
+        if (! is_dir(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+        (new Xlsx($spreadsheet))->save($path);
+        $spreadsheet->disconnectWorksheets();
+
+        return $path;
+    }
+
+    private function exportVa(FaspayTestRun $run, string $path): string
+    {
+        $templatePath = $this->templatePath('Faspay VA - Skenario Functional Test_V.3.0 static.xlsx');
+
+        $spreadsheet = IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getSheetByName('Transfer VA');
+        if ($sheet === null) {
+            throw new RuntimeException('Worksheet Transfer VA tidak ditemukan pada template resmi.');
+        }
+
+        $sheet->setCellValue('A4', 'Nama Pengguna Layanan : '.$run->merchant->name);
+        $date = $run->created_at ? $run->created_at->format('d/m/Y') : now()->format('d/m/Y');
+        $sheet->setCellValue('A6', 'Tanggal Pengujian : '.$date);
+
+        foreach ($run->results as $item) {
+            $row = self::VA_ROWS[$item['test_no']] ?? null;
             if ($row === null) {
                 continue;
             }

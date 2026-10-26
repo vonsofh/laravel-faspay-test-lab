@@ -19,7 +19,8 @@ Install it into any existing Laravel project with a single `composer require` co
   - Isolated database tables: `faspay_test_lab_merchants` and `faspay_test_lab_runs`.
   - Environment guard: auto-disabled in production unless explicitly turned on.
 - **Automated UAT Certification Scenarios**:
-  - Runs Faspay SNAP QRIS scenarios (18.1 – 18.25) with live progress and single-case rerun capability.
+  - **QRIS (QR MPM)**: Runs Faspay SNAP QRIS scenarios (18.1 – 18.25) with live progress and single-case rerun capability.
+  - **Virtual Account (Transfer VA Self-Test)**: Runs Faspay SNAP VA scenarios (11.1 – 11.17) by simulating Faspay calls directly to your host application's VA Inquiry & Payment endpoints (valid VA, paid VA, expired VA, unregistered VA, closed amount, invalid amount, duplicate external ID, unauthorized signature, missing mandatory fields).
   - Generates valid SNAP SHA256withRSA signatures on the fly.
   - Multi-request evidence capture for conflict and query flows.
 - **Bundled Official Faspay Excel Templates**:

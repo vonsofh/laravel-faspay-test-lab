@@ -19,6 +19,7 @@ use Vonso\FaspayTestLab\Services\FaspayExcelExportService;
 use Vonso\FaspayTestLab\Services\PaymentChannelInquiryService;
 use Vonso\FaspayTestLab\Services\QrisNotificationService;
 use Vonso\FaspayTestLab\Services\QrisFunctionalTestService;
+use Vonso\FaspayTestLab\Services\VaFunctionalTestService;
 use Vonso\FaspayTestLab\Services\VaNotificationService;
 use Vonso\FaspayTestLab\Services\VaSandboxAccountService;
 
@@ -62,8 +63,23 @@ class FaspayTestLabController extends Controller
         }
 
         return view('faspay-test-lab::runs.create', [
+            'service' => 'qris',
             'merchants' => $merchants,
             'cases' => config('faspay-test-lab.qris_cases', []),
+        ]);
+    }
+
+    public function createVaRun(): View
+    {
+        $merchants = FaspayMerchant::latest()->get();
+        if ($merchants->isEmpty()) {
+            return view('faspay-test-lab::merchants.form');
+        }
+
+        return view('faspay-test-lab::runs.create', [
+            'service' => 'va',
+            'merchants' => $merchants,
+            'cases' => config('faspay-test-lab.va_cases', []),
         ]);
     }
 
@@ -173,6 +189,14 @@ class FaspayTestLabController extends Controller
             'private_key' => ['required', 'string'],
             'channel_id' => ['required', 'string'],
             'qris_channel_code' => ['required', 'string'],
+            'va_target_url' => ['nullable', 'string', 'max:255'],
+            'va_inquiry_path' => ['nullable', 'string', 'max:255'],
+            'va_payment_path' => ['nullable', 'string', 'max:255'],
+            'va_partner_service_id' => ['nullable', 'string', 'max:32'],
+            'va_test_customer_no' => ['nullable', 'string', 'max:32'],
+            'va_paid_customer_no' => ['nullable', 'string', 'max:32'],
+            'va_expired_customer_no' => ['nullable', 'string', 'max:32'],
+            'va_test_amount' => ['nullable', 'string', 'max:32'],
         ]);
 
         $merchant = FaspayMerchant::create([...$data, 'merchant_id' => $data['partner_id']]);
@@ -191,6 +215,14 @@ class FaspayTestLabController extends Controller
             'private_key' => ['nullable', 'string'],
             'channel_id' => ['required', 'string'],
             'qris_channel_code' => ['required', 'string'],
+            'va_target_url' => ['nullable', 'string', 'max:255'],
+            'va_inquiry_path' => ['nullable', 'string', 'max:255'],
+            'va_payment_path' => ['nullable', 'string', 'max:255'],
+            'va_partner_service_id' => ['nullable', 'string', 'max:32'],
+            'va_test_customer_no' => ['nullable', 'string', 'max:32'],
+            'va_paid_customer_no' => ['nullable', 'string', 'max:32'],
+            'va_expired_customer_no' => ['nullable', 'string', 'max:32'],
+            'va_test_amount' => ['nullable', 'string', 'max:32'],
         ]);
 
         if (blank($data['private_key'] ?? null)) {
@@ -210,6 +242,8 @@ class FaspayTestLabController extends Controller
             'message' => 'Merchant berhasil diperbarui.',
             'merchant' => $merchant->fresh()->only([
                 'id', 'name', 'base_url', 'partner_id', 'channel_id', 'qris_channel_code',
+                'va_target_url', 'va_inquiry_path', 'va_payment_path', 'va_partner_service_id',
+                'va_test_customer_no', 'va_paid_customer_no', 'va_expired_customer_no', 'va_test_amount',
             ]),
         ]);
     }
@@ -219,12 +253,16 @@ class FaspayTestLabController extends Controller
         $merchantTable = config('faspay-test-lab.tables.merchants', 'faspay_test_lab_merchants');
         $data = $request->validate([
             'merchant_id' => ['required', "exists:{$merchantTable},id"],
+            'service' => ['nullable', 'in:qris,va'],
         ]);
+
+        $service = $data['service'] ?? 'qris';
+        $casesKey = $service === 'va' ? 'faspay-test-lab.va_cases' : 'faspay-test-lab.qris_cases';
 
         $run = FaspayTestRun::create([
             'faspay_merchant_id' => $data['merchant_id'],
-            'service' => 'qris',
-            'results' => collect(config('faspay-test-lab.qris_cases'))->map(function (array $case): array {
+            'service' => $service,
+            'results' => collect(config($casesKey, []))->map(function (array $case): array {
                 if ($case['execution_type'] !== 'automated') {
                     return $this->placeholderResult($case);
                 }
@@ -236,6 +274,7 @@ class FaspayTestLabController extends Controller
 
         return response()->json([
             'run_id' => $run->public_id,
+            'service' => $service,
             'show_url' => route('faspay-test-lab.runs.show', $run),
             'export_url' => route('faspay-test-lab.runs.export', $run),
         ], 201);
@@ -244,10 +283,12 @@ class FaspayTestLabController extends Controller
     public function executeCase(
         FaspayTestRun $run,
         string $caseNo,
-        QrisFunctionalTestService $service,
+        QrisFunctionalTestService $qrisService,
+        VaFunctionalTestService $vaService,
     ): JsonResponse {
         $caseNo = (string) $caseNo;
-        $case = collect(config('faspay-test-lab.qris_cases'))->first(
+        $casesKey = $run->service === 'va' ? 'faspay-test-lab.va_cases' : 'faspay-test-lab.qris_cases';
+        $case = collect(config($casesKey, []))->first(
             fn (array $configuredCase): bool => (string) $configuredCase['no'] === $caseNo,
         );
         if ($case === null || $case['execution_type'] !== 'automated') {
@@ -260,6 +301,8 @@ class FaspayTestLabController extends Controller
 
         $run->load('merchant');
         $run->update(['status' => 'running']);
+
+        $service = $run->service === 'va' ? $vaService : $qrisService;
         $result = $service->runCase($run->merchant, $case);
         $this->persistResult($run, $result);
 
@@ -338,7 +381,8 @@ class FaspayTestLabController extends Controller
     {
         $run->load('merchant');
         $safeName = Str::slug($run->merchant->name ?: 'merchant');
-        $filename = 'FASPAY_QRIS_Functional_Test_'.$safeName.'_'.$run->created_at->format('Ymd_His').'.xlsx';
+        $prefix = $run->service === 'va' ? 'FASPAY_VA_Functional_Test_' : 'FASPAY_QRIS_Functional_Test_';
+        $filename = $prefix.$safeName.'_'.$run->created_at->format('Ymd_His').'.xlsx';
         $directory = storage_path('app/private/faspay-reports');
         if (! is_dir($directory)) {
             mkdir($directory, 0755, true);

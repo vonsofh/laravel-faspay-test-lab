@@ -175,4 +175,29 @@ return [
         $case('18.24', 'QR MPM - Payment Host to Host', 'Amount Exceed Limit Reach', 'not_applicable', notes: 'Tidak Menggunakan Service QR MPM - Payment Host to Host'),
         $case('18.25', 'Payment Notification', 'Merchant membuat transaksi hingga pembayaran sukses. Saat menerima request notifikasi sukses dari Faspay, merchant mengembalikan response sesuai dokumentasi.', 'manual', notes: 'Menunggu notification sukses aktual dari Faspay setelah QRIS dibayar. Localhost memerlukan URL publik/tunnel agar callback Faspay dapat diterima.', handler: 'notification_e2e'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Virtual Account (Transfer VA) Functional Test Cases (11.1 – 11.17)
+    |--------------------------------------------------------------------------
+    */
+    'va_cases' => [
+        $case('11.1', 'Any Service', 'Access Token Invalid', 'not_applicable', notes: 'Tidak Menggunakan Service Token'),
+        $case('11.2', 'Any Service', 'Unauthorized . Signature', 'automated', '4012400', 'Unauthorized Signature', handler: 'invalid_signature'),
+        $case('11.3', 'Any Service', 'Missing Mandatory Field {} …, etc', 'automated', '4002402', 'Missing Mandatory Field', handler: 'missing_mandatory_field'),
+        $case('11.4', 'Any Service', 'Invalid Field Format {} .., etc', 'automated', '4002401', 'Invalid Field Format', handler: 'invalid_field_format'),
+        $case('11.5', 'Any Service', 'Cannot use the same X-EXTERNAL-ID', 'automated', '4092400', 'Conflict', handler: 'duplicate_external_id'),
+        $case('11.6', 'Inquiry VA', 'Input no Virtual Account Valid', 'automated', '2002400', 'success', handler: 'valid_va_inquiry'),
+        $case('11.7', 'Inquiry VA', 'Input no Virtual Account Valid sudah lunas', 'automated', '4042414', 'Bill has been paid', handler: 'paid_va_inquiry'),
+        $case('11.8', 'Inquiry VA', 'Input no Virtual Account Valid kadaluarsa', 'automated', '4042419', 'Bill expired', handler: 'expired_va_inquiry'),
+        $case('11.9', 'Inquiry VA', 'Input no Virtual Account tidak terdaftar', 'automated', '4042412', 'Bill not found', handler: 'unregistered_va_inquiry'),
+        $case('11.10', 'Payment VA', 'Input no Virtual Account Valid Closed Amount', 'automated', '2002500', 'success', handler: 'valid_va_payment'),
+        $case('11.11', 'Payment VA', 'Input no Virtual Account tidak terdaftar', 'automated', '4042512', 'Bill not found', handler: 'unregistered_va_payment'),
+        $case('11.12', 'Payment VA', 'Invalid Amount', 'automated', '4042513', 'Invalid Amount', handler: 'invalid_amount_payment'),
+        $case('11.13', 'Inquiry Status VA', 'Inquiry Status for Payment Success', 'not_applicable', notes: 'Tidak menggunakan Service Inquiry Status Va'),
+        $case('11.14', 'Create VA', 'membuat Virtual Account No', 'not_applicable', notes: 'Tidak menggunakan service Create VA'),
+        $case('11.15', 'Delete VA', 'menghapus Virtual Account No', 'not_applicable', notes: 'Tidak menggunakan service Delete VA'),
+        $case('11.16', 'Payment VA', 'Input no Virtual Account Valid Open Amount', 'not_applicable', notes: 'Tidak menggunakan Service Payment Open Amount'),
+        $case('11.17', 'Payment Notification', 'Merchant creates a transaction and completes the payment successfully. Upon receiving a successful notification request from Faspay, the merchant responds as outlined in the documentation.', 'manual', notes: 'Notifikasi sukses dari Faspay diproses oleh sistem merchant.', handler: 'notification_e2e'),
+    ],
 ];

@@ -25,6 +25,7 @@ Route::prefix($prefix)
         Route::get('/callbacks/{callback}', [FaspayTestLabController::class, 'showCallback'])->name('callbacks.show');
         Route::delete('/callbacks/{callback}', [FaspayTestLabController::class, 'destroyCallback'])->name('callbacks.destroy');
         Route::get('/qris/runs/create', [FaspayTestLabController::class, 'createQrisRun'])->name('qris.runs.create');
+        Route::get('/va/runs/create', [FaspayTestLabController::class, 'createVaRun'])->name('va.runs.create');
         Route::get('/runs', [FaspayTestLabController::class, 'runs'])->name('runs.index');
         Route::post('/runs', [FaspayTestLabController::class, 'createRun'])->name('runs.store');
         Route::get('/runs/{run}', [FaspayTestLabController::class, 'show'])->name('runs.show');

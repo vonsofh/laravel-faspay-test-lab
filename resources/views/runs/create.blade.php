@@ -1,18 +1,21 @@
 @extends('faspay-test-lab::layouts.app')
 
-@section('title', 'Pengujian QRIS')
+@php($isVa = ($service ?? 'qris') === 'va')
+@section('title', $isVa ? 'Pengujian Virtual Account' : 'Pengujian QRIS')
 
 @section('content')
 <div class="page-head">
     <div>
-        <h1>Pengujian QRIS</h1>
-        <p class="lead">Pilih merchant, lalu jalankan delapan skenario otomatis. Jangan tutup halaman selama proses berjalan.</p>
+        <h1>{{ $isVa ? 'Pengujian Virtual Account (Self-Test)' : 'Pengujian QRIS' }}</h1>
+        <p class="lead">{{ $isVa ? 'Simulasi request Faspay SNAP ke endpoint Virtual Account aplikasi Anda sendiri (Inquiry & Payment).' : 'Pilih merchant, lalu jalankan delapan skenario otomatis ke Faspay. Jangan tutup halaman selama proses berjalan.' }}</p>
     </div>
 </div>
 
 <section class="panel">
     <form id="run-form" method="post" action="{{ route('faspay-test-lab.runs.store') }}">
         @csrf
+        <input type="hidden" name="service" value="{{ $service ?? 'qris' }}">
+
         <div class="panel-head">
             <div><h2>Pilih merchant</h2></div>
             <a class="btn secondary" href="{{ route('faspay-test-lab.merchants.create') }}">Tambah merchant</a>
@@ -21,20 +24,37 @@
             <label for="merchant-select">Merchant sandbox</label>
             <select id="merchant-select" name="merchant_id" required>
                 @foreach($merchants as $merchant)
-                    <option value="{{ $merchant->id }}" data-partner-id="{{ $merchant->partner_id }}" data-channel-id="{{ $merchant->channel_id }}" data-qris-code="{{ $merchant->qris_channel_code }}" {{ (string) request('merchant') === (string) $merchant->id ? 'selected' : '' }}>{{ $merchant->name }}</option>
+                    <option value="{{ $merchant->id }}"
+                        data-partner-id="{{ $merchant->partner_id }}"
+                        data-channel-id="{{ $merchant->channel_id }}"
+                        data-qris-code="{{ $merchant->qris_channel_code }}"
+                        data-va-target="{{ $merchant->getEffectiveVaTargetUrl() }}"
+                        data-va-inquiry="{{ $merchant->getEffectiveVaInquiryPath() }}"
+                        {{ (string) request('merchant') === (string) $merchant->id ? 'selected' : '' }}
+                    >{{ $merchant->name }}</option>
                 @endforeach
             </select>
             <div id="merchant-meta" class="help"></div>
         </div>
 
-        <div class="field">
-            <label>URL notifikasi QRIS</label>
-            <input value="{{ route('faspay-test-lab.qris.notification') }}" readonly>
-        </div>
+        @if($isVa)
+            <div class="field">
+                <label>Target endpoint yang diuji</label>
+                <input id="va-target-display" value="" readonly>
+                <div class="help">Pastikan endpoint aplikasi Anda aktif dan dapat diakses dari host ini.</div>
+            </div>
+        @else
+            <div class="field">
+                <label>URL notifikasi QRIS</label>
+                <input value="{{ route('faspay-test-lab.qris.notification') }}" readonly>
+            </div>
+        @endif
 
         <div class="scope">
             <div><strong>{{ collect($cases)->where('execution_type', 'automated')->count() }}</strong><span>otomatis</span></div>
-            <div><strong>1</strong><span>cek pembayaran</span></div>
+            @if(! $isVa)
+                <div><strong>1</strong><span>cek pembayaran</span></div>
+            @endif
             <div><strong>1</strong><span>callback manual</span></div>
             <div><strong>{{ collect($cases)->where('execution_type', 'not_applicable')->count() }}</strong><span>tidak digunakan</span></div>
         </div>
@@ -65,13 +85,13 @@
         </div>
 
         <div class="btn-row" style="margin-top:24px">
-            <button class="btn" id="run-all" type="submit">Jalankan 8 skenario</button>
+            <button class="btn" id="run-all" type="submit">Jalankan {{ collect($cases)->where('execution_type', 'automated')->count() }} skenario</button>
             <a id="view-results" class="btn secondary hidden" href="#">Buka hasil</a>
             <a id="export-results" class="btn secondary hidden" href="#">Unduh Excel</a>
         </div>
     </form>
 </section>
-<p class="footer-note">Saat ini hanya pengujian QRIS QR MPM yang tersedia.</p>
+<p class="footer-note">{{ $isVa ? 'Pengujian Virtual Account SNAP (Transfer VA) diarahkan langsung ke aplikasi Anda.' : 'Pengujian QRIS QR MPM diarahkan ke Faspay Sandbox.' }}</p>
 @endsection
 
 @push('head')
@@ -107,7 +127,17 @@ async function json(response) {
 
 function syncMerchant() {
     const option = merchantSelect.selectedOptions[0];
-    document.getElementById('merchant-meta').textContent = `Partner ${option.dataset.partnerId} · Channel ${option.dataset.channelId} · QRIS ${option.dataset.qrisCode}`;
+    if (! option) return;
+    const isVa = '{{ $isVa ? "1" : "0" }}' === '1';
+    if (isVa) {
+        document.getElementById('merchant-meta').textContent = `Partner ${option.dataset.partnerId} · Target ${option.dataset.vaTarget}`;
+        const vaTargetInput = document.getElementById('va-target-display');
+        if (vaTargetInput) {
+            vaTargetInput.value = `${option.dataset.vaTarget}${option.dataset.vaInquiry}`;
+        }
+    } else {
+        document.getElementById('merchant-meta').textContent = `Partner ${option.dataset.partnerId} · Channel ${option.dataset.channelId} · QRIS ${option.dataset.qrisCode}`;
+    }
 }
 merchantSelect.addEventListener('change', () => { activeRun = null; syncMerchant(); });
 syncMerchant();

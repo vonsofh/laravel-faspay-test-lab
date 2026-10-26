@@ -20,6 +20,14 @@ return new class extends Migration
                 $table->longText('private_key');
                 $table->string('channel_id', 16)->default('77001');
                 $table->string('qris_channel_code', 32)->default('836');
+                $table->string('va_target_url')->nullable();
+                $table->string('va_inquiry_path')->nullable();
+                $table->string('va_payment_path')->nullable();
+                $table->string('va_partner_service_id', 32)->nullable();
+                $table->string('va_test_customer_no', 32)->nullable();
+                $table->string('va_paid_customer_no', 32)->nullable();
+                $table->string('va_expired_customer_no', 32)->nullable();
+                $table->string('va_test_amount', 32)->nullable();
                 $table->timestamps();
             });
         }

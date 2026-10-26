@@ -5,10 +5,13 @@
 @section('content')
 <div class="page-head">
     <div>
-        <h1>Pengujian QRIS</h1>
-        <p class="lead">Jalankan pengujian dan unduh hasilnya dalam format Excel.</p>
+        <h1>Faspay SNAP Test Lab</h1>
+        <p class="lead">Pilih modul pengujian sertifikasi Faspay dan unduh laporannya dalam format Excel resmi.</p>
     </div>
-    <a class="btn" href="{{ route('faspay-test-lab.qris.runs.create') }}">Mulai pengujian</a>
+    <div class="btn-row">
+        <a class="btn" href="{{ route('faspay-test-lab.qris.runs.create') }}">Pengujian QRIS</a>
+        <a class="btn secondary" href="{{ route('faspay-test-lab.va.runs.create') }}">Pengujian Virtual Account</a>
+    </div>
 </div>
 
 <section class="panel">
@@ -31,13 +34,14 @@
         <p class="subtle">Belum ada pengujian.</p>
     @else
         <table>
-            <thead><tr><th>Merchant</th><th>Waktu</th><th>Hasil otomatis</th><th></th></tr></thead>
+            <thead><tr><th>Merchant</th><th>Modul</th><th>Waktu</th><th>Hasil otomatis</th><th></th></tr></thead>
             <tbody>
             @foreach($runs as $run)
                 @php($results = collect($run->results))
                 @php($automated = $results->where('execution_type', 'automated'))
                 <tr>
                     <td><strong>{{ $run->merchant?->name ?? 'Merchant dihapus' }}</strong></td>
+                    <td><span class="code" style="font-size:11px">{{ strtoupper($run->service) }}</span></td>
                     <td>{{ $run->created_at->format('d M Y, H:i') }}</td>
                     <td><span class="status {{ $automated->where('result', 'FAIL')->isNotEmpty() ? 'fail' : ($run->status === 'completed' ? 'pass' : 'waiting') }}">{{ $automated->where('result', 'PASS')->count() }}/{{ $automated->count() }} berhasil</span></td>
                     <td style="text-align:right"><a class="btn secondary" href="{{ route('faspay-test-lab.runs.show', $run) }}">Buka</a></td>

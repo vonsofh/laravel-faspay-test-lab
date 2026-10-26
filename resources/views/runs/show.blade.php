@@ -1,24 +1,25 @@
 @extends('faspay-test-lab::layouts.app')
 
-@section('title', 'Hasil pengujian QRIS')
+@php($isVa = $run->service === 'va')
+@section('title', 'Hasil pengujian ' . ($isVa ? 'Virtual Account' : 'QRIS'))
 
 @section('content')
 @php($results = collect($run->results))
 @php($automated = $results->where('execution_type', 'automated'))
-@php($payment = $results->firstWhere('test_no', '18.12'))
-@php($generated = $results->firstWhere('test_no', '18.6'))
+@php($payment = ! $isVa ? $results->firstWhere('test_no', '18.12') : null)
+@php($generated = ! $isVa ? $results->firstWhere('test_no', '18.6') : null)
 @php($passed = $automated->where('result', 'PASS')->count())
 @php($failed = $automated->where('result', 'FAIL')->count())
 @php($pending = $results->filter(fn (array $item): bool => in_array($item['result'], ['WAITING', 'NOT RUN'], true) || $item['result'] === 'FAIL')->count())
-@php($callback = $results->firstWhere('test_no', '18.25'))
+@php($callback = $results->firstWhere('test_no', $isVa ? '11.17' : '18.25'))
 @php($notApplicable = $results->where('result', 'N/A')->count())
 
 <header class="report-header">
     <a class="back-link" href="{{ route('faspay-test-lab.runs.index') }}">← Riwayat pengujian</a>
     <div class="report-title-row">
         <div>
-            <h1>Hasil pengujian QRIS</h1>
-            <p class="lead">{{ $run->merchant?->name ?? 'Merchant dihapus' }} · {{ $run->created_at->format('d M Y, H:i') }}</p>
+            <h1>Hasil pengujian {{ $isVa ? 'Virtual Account' : 'QRIS' }}</h1>
+            <p class="lead">{{ $run->merchant?->name ?? 'Merchant dihapus' }} · {{ $run->created_at->format('d M Y, H:i') }} · {{ strtoupper($run->service) }}</p>
         </div>
         <a class="btn" href="{{ route('faspay-test-lab.runs.export', $run) }}">Unduh Excel</a>
     </div>
@@ -31,10 +32,10 @@
     </div>
         <div class="summary-stat summary-failed"><strong>{{ $failed }}</strong><span>Gagal</span></div>
         <div class="summary-stat summary-action"><strong>{{ $pending }}</strong><span>Perlu tindakan</span></div>
-        <div class="summary-stat summary-callback {{ ($callback['result'] ?? null) === 'PASS' ? 'is-received' : '' }}"><strong class="callback-state">{{ ($callback['result'] ?? null) === 'PASS' ? 'Diterima' : 'Menunggu' }}</strong><span>Notifikasi 18.25</span></div>
+        <div class="summary-stat summary-callback {{ ($callback['result'] ?? null) === 'PASS' ? 'is-received' : '' }}"><strong class="callback-state">{{ ($callback['result'] ?? null) === 'PASS' ? 'Diterima' : 'Menunggu' }}</strong><span>Notifikasi {{ $isVa ? '11.17' : '18.25' }}</span></div>
 </section>
 
-@if(in_array($payment['result'] ?? null, ['WAITING', 'MANUAL'], true))
+@if(! $isVa && in_array($payment['result'] ?? null, ['WAITING', 'MANUAL'], true))
 <section class="attention-panel">
     <div class="attention-copy">
         <span class="status waiting">Tindakan diperlukan</span>

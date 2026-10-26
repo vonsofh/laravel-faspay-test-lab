@@ -16,10 +16,12 @@
         <a class="brand" href="{{ route('faspay-test-lab.index') }}">Faspay Test Lab</a>
         <nav class="nav" aria-label="Navigasi utama">
             <a class="{{ request()->routeIs('faspay-test-lab.index') ? 'active' : '' }}" href="{{ route('faspay-test-lab.index') }}">Beranda</a>
-            <a class="{{ request()->routeIs('faspay-test-lab.va.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.va.index') }}">VA Sandbox</a>
+            <a class="{{ request()->routeIs('faspay-test-lab.qris.runs.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.qris.runs.create') }}">QRIS Test</a>
+            <a class="{{ request()->routeIs('faspay-test-lab.va.runs.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.va.runs.create') }}">VA Test</a>
+            <a class="{{ request()->routeIs('faspay-test-lab.va.index') ? 'active' : '' }}" href="{{ route('faspay-test-lab.va.index') }}">VA Sandbox</a>
             <a class="{{ request()->routeIs('faspay-test-lab.callbacks.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.callbacks.index') }}">Callback</a>
             <a class="{{ request()->routeIs('faspay-test-lab.merchants.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.merchants.index') }}">Merchant</a>
-            <a class="{{ request()->routeIs('faspay-test-lab.runs.*') ? 'active' : '' }}" href="{{ route('faspay-test-lab.runs.index') }}">Riwayat</a>
+            <a class="{{ request()->routeIs('faspay-test-lab.runs.*') && ! request()->routeIs('faspay-test-lab.*.runs.create') ? 'active' : '' }}" href="{{ route('faspay-test-lab.runs.index') }}">Riwayat</a>
         </nav>
     </div>
 </header>
