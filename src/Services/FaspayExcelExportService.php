@@ -66,16 +66,18 @@ class FaspayExcelExportService
             }
 
             if (is_array($item['request']) && is_array($item['response'])) {
-                $sheet->setCellValue('E'.$row, $this->formatRequest($item['request']));
-                $sheet->setCellValue('F'.$row, $this->formatResponse($item['response']));
+                $sheet->setCellValue('E'.$row, $this->formatRequest($item['request'], $item));
+                $sheet->setCellValue('F'.$row, $this->formatResponse($item['response'], $item));
             } else {
                 $sheet->setCellValue('E'.$row, null);
                 $sheet->setCellValue('F'.$row, null);
             }
 
             $sheet->setCellValue('G'.$row, $item['result']);
-            if ($item['execution_type'] === 'manual' && filled($item['notes'])) {
-                $notes = trim((string) $sheet->getCell('H'.$row)->getValue());
+            $notes = trim((string) $sheet->getCell('H'.$row)->getValue());
+            if (in_array($item['test_no'], ['11.5', '18.5'], true) && blank($notes)) {
+                $sheet->setCellValue('H'.$row, 'X-EXTERNAL-ID sama dengan request sebelumnya pada hari yang sama.');
+            } elseif ($item['execution_type'] === 'manual' && filled($item['notes'])) {
                 $sheet->setCellValue('H'.$row, trim($notes."\n".$item['notes']));
             }
             $sheet->getStyle('E'.$row.':H'.$row)->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
@@ -111,16 +113,18 @@ class FaspayExcelExportService
             }
 
             if (is_array($item['request']) && is_array($item['response'])) {
-                $sheet->setCellValue('E'.$row, $this->formatRequest($item['request']));
-                $sheet->setCellValue('F'.$row, $this->formatResponse($item['response']));
+                $sheet->setCellValue('E'.$row, $this->formatRequest($item['request'], $item));
+                $sheet->setCellValue('F'.$row, $this->formatResponse($item['response'], $item));
             } else {
                 $sheet->setCellValue('E'.$row, null);
                 $sheet->setCellValue('F'.$row, null);
             }
 
             $sheet->setCellValue('G'.$row, $item['result']);
-            if ($item['execution_type'] === 'manual' && filled($item['notes'])) {
-                $notes = trim((string) $sheet->getCell('H'.$row)->getValue());
+            $notes = trim((string) $sheet->getCell('H'.$row)->getValue());
+            if (in_array($item['test_no'], ['11.5', '18.5'], true) && blank($notes)) {
+                $sheet->setCellValue('H'.$row, 'X-EXTERNAL-ID sama dengan request sebelumnya pada hari yang sama.');
+            } elseif ($item['execution_type'] === 'manual' && filled($item['notes'])) {
                 $sheet->setCellValue('H'.$row, trim($notes."\n".$item['notes']));
             }
             $sheet->getStyle('E'.$row.':H'.$row)->getAlignment()->setWrapText(true)->setVertical(Alignment::VERTICAL_TOP);
@@ -150,8 +154,14 @@ class FaspayExcelExportService
         throw new RuntimeException("Official Faspay XLSX template [{$filename}] tidak ditemukan.");
     }
 
-    private function formatRequest(mixed $evidence): string
+    private function formatRequest(mixed $evidence, array $item = []): string
     {
+        if (in_array($item['test_no'] ?? null, ['11.5', '18.5'], true)) {
+            $req = is_array($evidence) && array_is_list($evidence) ? end($evidence) : $evidence;
+
+            return is_array($req) ? $this->formatSingleRequest($req) : '';
+        }
+
         if (is_array($evidence) && array_is_list($evidence)) {
             return collect($evidence)->map(fn (array $request, int $index): string => '=== REQUEST '.($index + 1).($index === 0 ? ' / PREREQUISITE' : ' / TEST')." ===\n\n".$this->formatSingleRequest($request)
             )->implode("\n\n");
@@ -170,8 +180,14 @@ class FaspayExcelExportService
         return 'URL: '.($request['url'] ?? '')."\n\nHEADER:\n".$headers."\n\nBODY:\n".$body;
     }
 
-    private function formatResponse(mixed $evidence): string
+    private function formatResponse(mixed $evidence, array $item = []): string
     {
+        if (in_array($item['test_no'] ?? null, ['11.5', '18.5'], true)) {
+            $resp = is_array($evidence) && array_is_list($evidence) ? end($evidence) : $evidence;
+
+            return is_array($resp) ? $this->encodeResponse($resp) : '';
+        }
+
         if (is_array($evidence) && array_is_list($evidence)) {
             return collect($evidence)->map(fn (array $response, int $index): string => '=== RESPONSE '.($index + 1).($index === 0 ? ' / PREREQUISITE' : ' / TEST')." ===\n\n".$this->encodeResponse($response)
             )->implode("\n\n");
