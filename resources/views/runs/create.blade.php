@@ -108,6 +108,26 @@ const automatedCases = @json(collect($cases)->where('execution_type', 'automated
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
 const executeUrlTemplate = @json(route('faspay-test-lab.runs.cases.execute', ['run' => '__RUN__', 'caseNo' => '__CASE__']));
 let activeRun = null;
+let isRunning = false;
+
+window.addEventListener('beforeunload', event => {
+    if (isRunning) {
+        event.preventDefault();
+        event.returnValue = '';
+        return '';
+    }
+});
+
+document.addEventListener('click', event => {
+    if (! isRunning) return;
+    const link = event.target.closest('a');
+    if (link && link.href && ! link.href.startsWith('#') && ! link.classList.contains('hidden')) {
+        if (! confirm('Pengujian sedang berjalan! Jika Anda meninggalkan halaman ini sekarang, pengujian akan terhenti. Yakin ingin meninggalkan halaman?')) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }
+}, true);
 
 function toast(message, type = '') {
     const item = document.createElement('div');
@@ -166,6 +186,7 @@ form.addEventListener('submit', async event => {
     const progress = panel.querySelector('.progress');
     const verdict = document.getElementById('progress-verdict');
     button.disabled = true;
+    isRunning = true;
     panel.classList.remove('hidden');
     progress.className = 'progress';
     document.getElementById('progress-bar').style.width = '0%';
@@ -204,7 +225,10 @@ form.addEventListener('submit', async event => {
         verdict.textContent = 'ERROR';
         verdict.className = 'fail';
         toast(error.message, 'error');
-    } finally { button.disabled = false; }
+    } finally {
+        button.disabled = false;
+        isRunning = false;
+    }
 });
 </script>
 @endpush
