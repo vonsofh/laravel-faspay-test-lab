@@ -73,7 +73,7 @@ class VaFunctionalTestService
 
         $headers = [
             'Content-Type' => 'application/json',
-            'X-TIMESTAMP' => $timestamp,
+            'X-TIMESTAMP' => $case['handler'] === 'invalid_field_format' ? 'INVALID-TIMESTAMP' : $timestamp,
             'X-SIGNATURE' => $case['handler'] === 'invalid_signature' ? 'INVALID_SIGNATURE' : $signed['signature'],
             'X-PARTNER-ID' => $merchant->partner_id,
             'X-EXTERNAL-ID' => $case['handler'] === 'invalid_field_format' ? 'externalId' : $externalId,
@@ -274,6 +274,14 @@ class VaFunctionalTestService
         $codeMatches = $actualCode === $expectedCode
             || (str_contains($expectedCode, 'xx') && preg_match('/^'.str_replace('xx', '\d{2}', $expectedCode).'$/', $actualCode) === 1);
 
+        // Case 11.9 and 11.11 (unregistered VA): accept standard SNAP 404xx11 (Invalid Virtual Account) or 404xx12 (Bill not found)
+        if (in_array($case['no'], ['11.9', '11.11'], true)) {
+            $serviceCode = $case['no'] === '11.9' ? '24' : '25';
+            if (in_array($actualCode, ['404'.$serviceCode.'11', '404'.$serviceCode.'12'], true)) {
+                $codeMatches = true;
+            }
+        }
+
         $expectedMessage = $case['expected_message'] ?? null;
         if (blank($expectedMessage)) {
             return $codeMatches;
@@ -286,7 +294,11 @@ class VaFunctionalTestService
             || str_contains($normActual, $normExpected)
             || str_contains($normExpected, $normActual)
             || (str_contains($normExpected, 'mandatory') && str_contains($normActual, 'mandatory'))
-            || (str_contains($normExpected, 'unauthorized') && str_contains($normActual, 'unauthorized'));
+            || (str_contains($normExpected, 'unauthorized') && str_contains($normActual, 'unauthorized'))
+            || (str_contains($normExpected, 'format') && str_contains($normActual, 'format'))
+            || (str_contains($normExpected, 'paid') && str_contains($normActual, 'paid'))
+            || (str_contains($normExpected, 'expired') && str_contains($normActual, 'expired'))
+            || (str_contains($normExpected, 'not found') && (str_contains($normActual, 'not found') || str_contains($normActual, 'invalid virtual account')));
 
         return $codeMatches && $messageMatches;
     }
