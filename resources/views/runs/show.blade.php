@@ -61,6 +61,39 @@
 </section>
 @endif
 
+@if($isVa && in_array($callback['result'] ?? null, ['WAITING', 'MANUAL'], true))
+<section class="attention-panel">
+    <div class="attention-copy">
+        <span class="status waiting">Tindakan diperlukan</span>
+        <h2>Verifikasi Pembayaran Virtual Account (11.17)</h2>
+        <p>Buka simulator Faspay di tab baru, pilih <strong>Virtual Account</strong>, masukkan nomor VA di bawah ini, lalu klik <strong>Inquiry lalu Bayar</strong>. Sistem akan mendeteksi callback notifikasi secara otomatis.</p>
+    </div>
+    @php($vaNumber = $run->merchant?->getEffectiveVaPartnerServiceId() . $run->merchant?->getEffectiveVaCustomerNo())
+    @php($vaAmount = $run->merchant?->getEffectiveVaAmount())
+    <div class="payment-workspace">
+        <div class="payment-details" style="width:100%">
+            <dl>
+                <div><dt>Nomor Virtual Account</dt><dd><strong class="code" style="font-size:16px; user-select:all">{{ $vaNumber }}</strong></dd></div>
+                <div><dt>Nominal</dt><dd>Rp {{ number_format((float) $vaAmount, 0, ',', '.') }}</dd></div>
+                <div><dt>Partner Service ID</dt><dd>{{ $run->merchant?->getEffectiveVaPartnerServiceId() }}</dd></div>
+                <div><dt>Customer No</dt><dd>{{ $run->merchant?->getEffectiveVaCustomerNo() }}</dd></div>
+            </dl>
+            <div class="btn-row" style="margin-top:16px">
+                <a class="btn" href="https://simulator.faspay.co.id/simulator" target="_blank" rel="noopener noreferrer">
+                    Buka Faspay Simulator ↗
+                </a>
+                <button class="btn check-payment" type="button" data-url="{{ route('faspay-test-lab.runs.cases.va.check', $run) }}">
+                    Periksa Notifikasi
+                </button>
+                <button class="btn secondary" type="button" id="start-polling" data-url="{{ route('faspay-test-lab.runs.cases.va.check', $run) }}">
+                    Periksa Otomatis 2 Menit
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+
 <section class="test-report">
     <div class="test-toolbar">
         <div><h2>Hasil skenario</h2><p>{{ $results->count() }} skenario sertifikasi</p></div>

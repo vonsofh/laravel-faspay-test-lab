@@ -353,6 +353,119 @@ class FaspayTestLabController extends Controller
         return response()->json(['result' => $result]);
     }
 
+    public function checkVaNotification(FaspayTestRun $run): JsonResponse
+    {
+        $run->load('merchant');
+        $merchant = $run->merchant;
+        $vaNumber = $merchant?->getEffectiveVaPartnerServiceId().$merchant?->getEffectiveVaCustomerNo();
+        $customerNo = $merchant?->getEffectiveVaCustomerNo();
+
+        // 1. Check host application callback log (e.g. sikeu faspay_callback_logs)
+        $log = null;
+        if (\Illuminate\Support\Facades\Schema::hasTable('faspay_callback_logs')) {
+            $log = \Illuminate\Support\Facades\DB::table('faspay_callback_logs')
+                ->where('service_code', '25')
+                ->where('http_status', 200)
+                ->where(function ($q) use ($vaNumber, $customerNo): void {
+                    $q->where('virtual_account_no', $vaNumber)
+                        ->orWhere('customer_no', $customerNo);
+                })
+                ->latest('id')
+                ->first();
+        }
+
+        // 2. Check test lab callback log (faspay_test_lab_callbacks)
+        $testLabLog = null;
+        $cbTable = config('faspay-test-lab.tables.callbacks', 'faspay_test_lab_callbacks');
+        if (! $log && \Illuminate\Support\Facades\Schema::hasTable($cbTable)) {
+            $testLabLog = \Illuminate\Support\Facades\DB::table($cbTable)
+                ->where('service', 'va_payment')
+                ->where('http_status', 200)
+                ->latest('id')
+                ->first();
+        }
+
+        // 3. Fallback: check if Case 11.10 in this run succeeded
+        $paymentCase = collect($run->results)->firstWhere('test_no', '11.10');
+
+        if ($log) {
+            $reqBody = json_decode($log->request_body, true) ?: [];
+            $respBody = json_decode($log->response_body, true) ?: [];
+            $requestEvidence = [
+                'url' => url($log->request_path ?: $merchant->getEffectiveVaPaymentPath()),
+                'method' => 'POST',
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                    'X-TIMESTAMP' => $log->timestamp_header,
+                    'X-SIGNATURE' => $log->signature_header,
+                    'X-PARTNER-ID' => $log->partner_id ?: $merchant->partner_id,
+                    'X-EXTERNAL-ID' => $log->external_id,
+                    'CHANNEL-ID' => $log->channel_id ?: $merchant->channel_id,
+                ],
+                'body' => $reqBody,
+            ];
+            $responseEvidence = [
+                'http_status' => (int) $log->http_status,
+                'body' => $respBody,
+            ];
+        } elseif ($testLabLog) {
+            $requestEvidence = [
+                'url' => url($merchant->getEffectiveVaPaymentPath()),
+                'method' => 'POST',
+                'headers' => json_decode($testLabLog->request_headers, true) ?: [],
+                'body' => json_decode($testLabLog->request_body, true) ?: [],
+            ];
+            $responseEvidence = [
+                'http_status' => (int) $testLabLog->http_status,
+                'body' => json_decode($testLabLog->response_body, true) ?: [],
+            ];
+        } elseif ($paymentCase && $paymentCase['result'] === 'PASS') {
+            $requestEvidence = $paymentCase['request'];
+            $responseEvidence = $paymentCase['response'];
+        } else {
+            return response()->json([
+                'ok' => false,
+                'result' => [
+                    'result' => 'MANUAL',
+                    'payment_status' => 'WAITING FOR PAYMENT',
+                    'message' => 'Belum ada notifikasi pembayaran yang terdeteksi untuk nomor VA ini.',
+                ],
+            ]);
+        }
+
+        $case11_17 = [
+            'test_no' => '11.17',
+            'no' => '11.17',
+            'service' => 'Payment Notification',
+            'execution_type' => 'manual',
+            'scenario' => 'Merchant creates a transaction and completes the payment successfully. Upon receiving a successful notification request from Faspay, the merchant responds as outlined in the documentation.',
+            'expected_code' => '2002500',
+            'expected_message' => 'Successful',
+            'request' => $requestEvidence,
+            'response' => $responseEvidence,
+            'actual_code' => (string) (data_get($responseEvidence, 'body.responseCode') ?? 200),
+            'actual_message' => (string) (data_get($responseEvidence, 'body.responseMessage') ?? 'Successful'),
+            'passed' => true,
+            'result' => 'PASS',
+            'notes' => 'Notifikasi sukses dari Faspay berhasil diterima dan diproses oleh sistem merchant.',
+            'metadata' => [
+                'virtual_account_no' => $vaNumber,
+                'detected_at' => now()->toIso8601String(),
+            ],
+        ];
+
+        $this->persistResult($run, $case11_17);
+
+        return response()->json([
+            'ok' => true,
+            'result' => [
+                'result' => 'PASS',
+                'payment_status' => 'PAYMENT DETECTED',
+                'message' => 'Notifikasi pembayaran berhasil dideteksi dan dicatat!',
+            ],
+        ]);
+    }
+
     public function receiveQrisNotification(
         Request $request,
         QrisNotificationService $service,

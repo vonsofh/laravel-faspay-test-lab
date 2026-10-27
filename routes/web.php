@@ -33,6 +33,7 @@ Route::prefix($prefix)
             ->where('caseNo', '\d+\.\d+')
             ->name('runs.cases.execute');
         Route::post('/runs/{run}/cases/18.12/check', [FaspayTestLabController::class, 'checkPayment'])->name('runs.cases.payment.check');
+        Route::post('/runs/{run}/cases/11.17/check', [FaspayTestLabController::class, 'checkVaNotification'])->name('runs.cases.va.check');
         Route::get('/runs/{run}/export', [FaspayTestLabController::class, 'export'])->name('runs.export');
     });
 
