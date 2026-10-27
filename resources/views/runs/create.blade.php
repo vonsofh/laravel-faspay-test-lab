@@ -30,6 +30,7 @@
                         data-qris-code="{{ $merchant->qris_channel_code }}"
                         data-va-target="{{ $merchant->getEffectiveVaTargetUrl() }}"
                         data-va-inquiry="{{ $merchant->getEffectiveVaInquiryPath() }}"
+                        data-va-account="{{ $merchant->getEffectiveVaPartnerServiceId() . $merchant->getEffectiveVaCustomerNo() }}"
                         {{ (string) request('merchant') === (string) $merchant->id ? 'selected' : '' }}
                     >{{ $merchant->name }}</option>
                 @endforeach
@@ -153,7 +154,7 @@ function syncMerchant() {
         document.getElementById('merchant-meta').textContent = `Partner ${option.dataset.partnerId} · Target ${option.dataset.vaTarget}`;
         const vaTargetInput = document.getElementById('va-target-display');
         if (vaTargetInput) {
-            vaTargetInput.value = `${option.dataset.vaTarget}${option.dataset.vaInquiry}`;
+            vaTargetInput.value = `${option.dataset.vaTarget}${option.dataset.vaInquiry} (Nomor VA: ${option.dataset.vaAccount})`;
         }
     } else {
         document.getElementById('merchant-meta').textContent = `Partner ${option.dataset.partnerId} · Channel ${option.dataset.channelId} · QRIS ${option.dataset.qrisCode}`;
