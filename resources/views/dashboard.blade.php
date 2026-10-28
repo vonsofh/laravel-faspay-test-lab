@@ -1,54 +1,37 @@
-@extends('faspay-test-lab::layouts.app')
+<x-faspay-test-lab::layouts.faspay title="Command center · Faspay Test Lab">
+    @php
+        $metrics = $dashboardMetrics;
+        $selectedMerchant = $merchants->firstWhere('id', $selectedMerchantId) ?? $merchants->first();
+        $selectedReadiness = $selectedMerchant ? ($merchantReadiness[$selectedMerchant->id] ?? []) : [];
+        $automatedCaseCount = collect($qris_cases)->where('execution_type', 'automated')->count();
+        $vaAutomatedCaseCount = collect($va_cases)->where('execution_type', 'automated')->count();
+    @endphp
 
-@section('title', 'Faspay Test Lab')
+    <header class="page-header">
+        <div><p class="eyebrow">Faspay / command center</p><h1 class="page-title">Buktikan integrasi sebelum masuk produksi.</h1><p class="page-lead">Satu ruang untuk menyimpan koneksi merchant, menjalankan skenario API, dan membaca hasilnya tanpa kehilangan jejak teknis.</p></div>
+        <div class="header-actions"><a class="btn btn--soft" href="#merchant-form">Tambah merchant ↘</a>@if($runs->isNotEmpty())<a class="btn" href="#recent-runs">Lihat aktivitas</a>@endif</div>
+    </header>
 
-@section('content')
-<div class="page-head">
-    <div>
-        <h1>Faspay SNAP Test Lab</h1>
-        <p class="lead">Pilih modul pengujian sertifikasi Faspay dan unduh laporannya dalam format Excel resmi.</p>
+    <section class="hero-panel" aria-labelledby="hero-title"><div class="hero-panel__content"><div class="hero-panel__badge"><span class="status-dot status-dot--live"></span>Sandbox control room</div><h2 id="hero-title">Dari kredensial ke test result, dengan jalur yang jelas.</h2><p>Mulai dari merchant yang ingin diuji. Setelah koneksi siap, pilih QRIS atau Transfer VA dan jalankan pemeriksaan otomatis secara berurutan.</p><a class="btn btn--lime" href="#workspace">Buka test workspace ↘</a></div></section>
+
+    <section class="metric-grid" aria-label="Ringkasan workspace" style="margin-top:18px"><div class="metric"><span class="metric__label">Merchants</span><strong class="metric__value">{{ $metrics['merchant_count'] }}</strong><span class="metric__hint">koneksi tersimpan</span></div><div class="metric"><span class="metric__label">Total runs</span><strong class="metric__value">{{ $metrics['run_count'] }}</strong><span class="metric__hint">semua service</span></div><div class="metric"><span class="metric__label">Pass rate</span><strong class="metric__value metric__value--good">{{ $metrics['pass_rate'] }}%</strong><span class="metric__hint">{{ $metrics['pass_count'] }} automated pass</span></div><div class="metric"><span class="metric__label">Needs attention</span><strong class="metric__value metric__value--bad">{{ $metrics['attention_count'] + $metrics['fail_count'] }}</strong><span class="metric__hint">{{ $metrics['fail_count'] }} fail · {{ $metrics['attention_count'] }} pending</span></div></section>
+
+    <div id="workspace" class="dashboard-grid" style="margin-top:18px">
+        <div class="dashboard-stack">
+            <section class="panel" id="merchant-form" aria-labelledby="merchant-title"><div class="panel__header"><div><p class="eyebrow">01 / connection</p><h2 class="panel__title" id="merchant-title">Siapkan merchant</h2><p class="panel__copy">Isi koneksi sandbox terlebih dahulu. Private key disimpan terenkripsi dan tidak pernah ditampilkan kembali.</p></div><span class="status-chip status-chip--muted">Required</span></div><div class="panel__body setup-layout">
+                <form method="post" action="{{ route('faspay-test-lab.merchants.store') }}">
+                    @csrf
+                    <div class="form-section"><div class="form-section__heading"><span class="step-number">A</span><h3 class="form-section__title">Identitas merchant</h3></div><p class="form-section__note">Gunakan nama dan Partner ID yang sama dengan konfigurasi Faspay Anda.</p><div class="grid-2"><div class="field"><label for="name">Nama merchant</label><input id="name" name="name" required></div><div class="field"><label for="partner_id">Merchant ID / X-PARTNER-ID</label><input id="partner_id" name="partner_id" required></div></div></div>
+                    <div class="form-section"><div class="form-section__heading"><span class="step-number">B</span><h3 class="form-section__title">QRIS connection</h3></div><p class="form-section__note">Koneksi ini digunakan oleh QRIS Generate dan Query Payment.</p><div class="grid-2"><div class="field full"><label for="base_url">Faspay Base URL</label><input id="base_url" name="base_url" type="url" value="https://debit-sandbox.faspay.co.id" required></div><div class="field"><label for="channel_id">CHANNEL-ID</label><input id="channel_id" name="channel_id" value="77001" required></div><div class="field"><label for="qris_channel_code">QRIS channelCode</label><input id="qris_channel_code" name="qris_channel_code" value="836" required></div></div></div>
+                    <div class="form-section"><div class="form-section__heading"><span class="step-number">C</span><h3 class="form-section__title">Security</h3></div><p class="form-section__note">Private key hanya dipakai untuk signing request dan disimpan menggunakan Laravel encryption.</p><div class="field"><label for="private_key">RSA private key (PEM)</label><textarea id="private_key" name="private_key" required spellcheck="false" placeholder="-----BEGIN PRIVATE KEY-----"></textarea></div></div>
+                    <details><summary>Transfer VA configuration (optional)</summary><div style="padding-top:15px"><p class="form-section__note">Kosongkan untuk menggunakan endpoint dan akun VA sandbox host secara otomatis.</p><div class="grid-2"><div class="field full"><label for="va_target_url">Target App Base URL</label><input id="va_target_url" name="va_target_url" placeholder="Auto-detect host URL"></div><div class="field"><label for="va_inquiry_path">Inquiry path</label><input id="va_inquiry_path" name="va_inquiry_path" placeholder="Auto-detect route"></div><div class="field"><label for="va_payment_path">Payment path</label><input id="va_payment_path" name="va_payment_path" placeholder="Auto-detect route"></div><div class="field"><label for="va_partner_service_id">Partner Service ID</label><input id="va_partner_service_id" name="va_partner_service_id" placeholder="Auto-detect active account"></div><div class="field"><label for="va_test_customer_no">Test Customer No</label><input id="va_test_customer_no" name="va_test_customer_no" placeholder="Auto-detect active account"></div><div class="field"><label for="va_test_amount">Test amount</label><input id="va_test_amount" name="va_test_amount" placeholder="Auto-detect active account"></div></div></div></details>
+                    <div class="btn-row"><button class="btn" type="submit">Simpan merchant</button><a class="btn btn--soft" href="#merchant-form">Reset</a></div>
+                </form>
+                <aside><div class="panel" style="background:var(--soft)"><p class="eyebrow">Readiness</p><h3 style="margin-bottom:13px">Connection checklist</h3>@if($selectedMerchant)<div class="requirements"><div class="requirement {{ ($selectedReadiness['ready'] ?? false) ? 'is-ready' : '' }}"><strong>{{ ($selectedReadiness['ready'] ?? false) ? '✓ Merchant ready' : '○ Merchant needs setup' }}</strong><span>{{ ($selectedReadiness['ready'] ?? false) ? 'Required connection fields are complete.' : 'Complete identity, QRIS, and private key fields.' }}</span></div><div class="requirement"><strong>QRIS / QR MPM</strong><span>{{ $automatedCaseCount }} automated scenarios ready</span></div><div class="requirement"><strong>Transfer VA</strong><span>Auto-detects host sandbox account when available.</span></div></div>@else<div class="empty-state"><h3>Belum ada merchant</h3><p>Tambahkan merchant untuk membuka test workspace.</p></div>@endif</div></aside>
+            </section>
+
+            <section class="panel" id="recent-runs"><div class="panel__header"><div><p class="eyebrow">03 / activity</p><h2 class="panel__title">Recent test runs</h2><p class="panel__copy">Evidence tetap tersimpan per run untuk audit dan export.</p></div><a class="btn btn--soft" href="{{ route('faspay-test-lab.runs.index') }}">Lihat semua</a></div><div class="panel__body">@if($runs->isEmpty())<div class="empty-state"><h3>Belum ada run</h3><p>Jalankan QRIS atau VA test dari workspace.</p></div>@else<div class="run-list">@foreach($runs as $run)@php($runResults=collect($run->results))@php($runAutomated=$runResults->where('execution_type','automated'))<div class="run-item"><div class="run-item__meta"><strong>{{ $run->merchant?->name ?? 'Merchant deleted' }} · {{ strtoupper($run->service) }}</strong><span>{{ $run->created_at->format('d M Y, H:i') }} · {{ $runAutomated->where('result','PASS')->count() }}/{{ $runAutomated->count() }} automated pass</span></div><a class="btn btn--soft" href="{{ route('faspay-test-lab.runs.show',$run) }}">Buka</a></div>@endforeach</div>@endif</div></section>
+        </div>
+        <aside class="dashboard-stack"><section class="panel"><div class="panel__header"><div><p class="eyebrow">02 / execute</p><h2 class="panel__title">Start a run</h2><p class="panel__copy">Pilih modul, lalu jalankan case satu per satu atau semua otomatis.</p></div></div><div class="panel__body"><div class="btn-row"><a class="btn btn--lime" href="{{ route('faspay-test-lab.qris.runs.create') }}">Start QRIS run ↗</a><a class="btn btn--soft" href="{{ route('faspay-test-lab.va.runs.create') }}">Start VA run ↗</a></div><div class="requirements" style="margin-top:18px"><div class="requirement"><strong>QRIS</strong><span>{{ $automatedCaseCount }} automated · payment flow · official XLSX</span></div><div class="requirement"><strong>Transfer VA</strong><span>{{ $vaAutomatedCaseCount }} automated · host self-test · callback evidence</span></div></div></div></section><section class="panel"><div class="panel__header"><div><p class="eyebrow">Ingress</p><h2 class="panel__title">Callbacks</h2><p class="panel__copy">Track callback requests without exposing private keys.</p></div><a class="btn btn--soft" href="{{ route('faspay-test-lab.callbacks.index') }}">Open</a></div></section></aside>
     </div>
-    <div class="btn-row">
-        <a class="btn" href="{{ route('faspay-test-lab.qris.runs.create') }}">Pengujian QRIS</a>
-        <a class="btn secondary" href="{{ route('faspay-test-lab.va.runs.create') }}">Pengujian Virtual Account</a>
-    </div>
-</div>
-
-<section class="panel">
-    <div class="panel-head"><div><h2>URL notifikasi sandbox</h2><p class="subtle">Gunakan URL persis berikut pada konfigurasi Faspay.</p></div></div>
-    <table>
-        <tbody>
-            <tr><th>VA Static</th><td><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.va.payment') ? route('faspay-test-lab.va.payment') : (\Illuminate\Support\Facades\Route::has('faspay.va.payment') ? route('faspay.va.payment', ['mode' => 'sandbox']) : url(config('faspay-test-lab.va_notification.payment_path', 'faspay/sandbox/notification/v1.0/transfer-va/payment'))) }}</span></td></tr>
-            <tr><th>QRIS</th><td><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.qris.notification') ? route('faspay-test-lab.qris.notification') : url(config('faspay-test-lab.qris_notification.path', 'faspay/sandbox/notification/v1.0/qr/qr-mpm-notify')) }}</span></td></tr>
-            <tr><th>Direct Debit</th><td><span class="code">{{ \Illuminate\Support\Facades\Route::has('faspay-test-lab.direct-debit.notification') ? route('faspay-test-lab.direct-debit.notification') : (\Illuminate\Support\Facades\Route::has('faspay.debit.payment-notification') ? route('faspay.debit.payment-notification', ['mode' => 'sandbox']) : url(config('faspay-test-lab.direct_debit_notification.path', 'faspay/sandbox/notification/v1.0/debit/notify'))) }}</span></td></tr>
-        </tbody>
-    </table>
-</section>
-
-<section class="panel">
-    <div class="panel-head">
-        <div><h2>Pengujian terakhir</h2></div>
-        <a class="btn secondary" href="{{ route('faspay-test-lab.runs.index') }}">Lihat semua</a>
-    </div>
-    @if($runs->isEmpty())
-        <p class="subtle">Belum ada pengujian.</p>
-    @else
-        <table>
-            <thead><tr><th>Merchant</th><th>Modul</th><th>Waktu</th><th>Hasil otomatis</th><th></th></tr></thead>
-            <tbody>
-            @foreach($runs as $run)
-                @php($results = collect($run->results))
-                @php($automated = $results->where('execution_type', 'automated'))
-                <tr>
-                    <td><strong>{{ $run->merchant?->name ?? 'Merchant dihapus' }}</strong></td>
-                    <td><span class="code" style="font-size:11px">{{ strtoupper($run->service) }}</span></td>
-                    <td>{{ $run->created_at->format('d M Y, H:i') }}</td>
-                    <td><span class="status {{ $automated->where('result', 'FAIL')->isNotEmpty() ? 'fail' : ($run->status === 'completed' ? 'pass' : 'waiting') }}">{{ $automated->where('result', 'PASS')->count() }}/{{ $automated->count() }} berhasil</span></td>
-                    <td style="text-align:right"><a class="btn secondary" href="{{ route('faspay-test-lab.runs.show', $run) }}">Buka</a></td>
-                </tr>
-            @endforeach
-            </tbody>
-        </table>
-    @endif
-</section>
-@endsection
+</x-faspay-test-lab::layouts.faspay>

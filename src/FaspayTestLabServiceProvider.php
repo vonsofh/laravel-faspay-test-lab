@@ -2,6 +2,7 @@
 
 namespace Vonso\FaspayTestLab;
 
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 use Vonso\FaspayTestLab\Commands\InstallCommand;
 
@@ -17,6 +18,7 @@ class FaspayTestLabServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'faspay-test-lab');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'faspay-test-lab');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');

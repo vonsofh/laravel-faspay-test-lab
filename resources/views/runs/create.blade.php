@@ -1,9 +1,5 @@
-@extends('faspay-test-lab::layouts.app')
-
 @php($isVa = ($service ?? 'qris') === 'va')
-@section('title', $isVa ? 'Pengujian Virtual Account' : 'Pengujian QRIS')
-
-@section('content')
+<x-faspay-test-lab::layouts.faspay :title="$isVa ? 'Pengujian Virtual Account' : 'Pengujian QRIS'">
 <div class="page-head">
     <div>
         <h1>{{ $isVa ? 'Pengujian Virtual Account (Self-Test)' : 'Pengujian QRIS' }}</h1>
@@ -93,7 +89,7 @@
     </form>
 </section>
 <p class="footer-note">{{ $isVa ? 'Pengujian Virtual Account SNAP (Transfer VA) diarahkan langsung ke aplikasi Anda.' : 'Pengujian QRIS QR MPM diarahkan ke Faspay Sandbox.' }}</p>
-@endsection
+@push('scripts')
 
 @push('head')
 <style>
@@ -101,7 +97,6 @@
 </style>
 @endpush
 
-@push('scripts')
 <script>
 const form = document.getElementById('run-form');
 const merchantSelect = document.getElementById('merchant-select');
@@ -233,3 +228,4 @@ form.addEventListener('submit', async event => {
 });
 </script>
 @endpush
+</x-faspay-test-lab::layouts.faspay>

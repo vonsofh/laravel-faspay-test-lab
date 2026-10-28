@@ -25,16 +25,62 @@ use Vonso\FaspayTestLab\Services\VaSandboxAccountService;
 
 class FaspayTestLabController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $merchants = FaspayMerchant::latest()->get();
         if ($merchants->isEmpty()) {
             return view('faspay-test-lab::merchants.form', ['onboarding' => true]);
         }
 
+        $allRuns = FaspayTestRun::query()->latest()->get(['service', 'status', 'results']);
+        $automatedResults = $allRuns->flatMap(
+            fn (FaspayTestRun $run): array => collect($run->results ?? [])
+                ->where('execution_type', 'automated')
+                ->all(),
+        );
+        $passedResults = $automatedResults->where('result', 'PASS')->count();
+        $failedResults = $automatedResults->where('result', 'FAIL')->count();
+        $attentionResults = $automatedResults->whereIn('result', ['NOT RUN', 'WAITING'])->count();
+
+        $merchantReadiness = $merchants->mapWithKeys(function (FaspayMerchant $merchant): array {
+            $requiredFields = ['name', 'base_url', 'partner_id', 'channel_id', 'qris_channel_code'];
+            $missingRequired = collect($requiredFields)
+                ->filter(fn (string $field): bool => blank($merchant->{$field}))
+                ->values()
+                ->all();
+
+            return [$merchant->id => [
+                'ready' => blank($missingRequired) && filled($merchant->private_key),
+                'has_private_key' => filled($merchant->private_key),
+                'missing_required' => $missingRequired,
+                'va_configured' => collect([
+                    'va_target_url', 'va_inquiry_path', 'va_payment_path', 'va_partner_service_id',
+                    'va_test_customer_no', 'va_test_amount',
+                ])->filter(fn (string $field): bool => filled($merchant->{$field}))->count(),
+                'va_total' => 6,
+            ]];
+        })->all();
+
         return view('faspay-test-lab::dashboard', [
             'merchants' => $merchants,
             'runs' => FaspayTestRun::with('merchant')->latest()->limit(5)->get(),
+            'qris_cases' => config('faspay-test-lab.qris_cases', []),
+            'va_cases' => config('faspay-test-lab.va_cases', []),
+            'selectedMerchantId' => $request->integer('merchant'),
+            'merchantReadiness' => $merchantReadiness,
+            'dashboardMetrics' => [
+                'merchant_count' => $merchants->count(),
+                'run_count' => $allRuns->count(),
+                'qris_runs' => $allRuns->where('service', 'qris')->count(),
+                'va_runs' => $allRuns->where('service', 'va')->count(),
+                'pass_count' => $passedResults,
+                'fail_count' => $failedResults,
+                'attention_count' => $attentionResults,
+                'automated_count' => $automatedResults->count(),
+                'pass_rate' => $automatedResults->count() > 0
+                    ? (int) round(($passedResults / $automatedResults->count()) * 100)
+                    : 0,
+            ],
         ]);
     }
 
